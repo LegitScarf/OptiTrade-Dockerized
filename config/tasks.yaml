@@ -49,7 +49,8 @@ analyze_technicals:
   expected_output: >
     JSON object with technical analysis including signal, confidence, indicators,
     key levels, trend, and rationale.
-
+  
+  async_execution: true
   agent: technical_analyst_agent
   context:
     - fetch_market_data
@@ -67,6 +68,7 @@ analyze_sentiment:
   expected_output: >
     JSON object with sentiment_score, confidence, key_themes, sources, and alerts.
 
+  async_execution: true
   agent: sentiment_analyst_agent
   context:
     - fetch_market_data
@@ -84,7 +86,8 @@ compute_greeks_volatility:
 
   expected_output: >
     JSON object with greeks_by_strike, iv_summary, gamma_risk_zones, and risk_flags.
-
+  
+  async_execution: true
   agent: volatility_greeks_agent
   context:
     - fetch_market_data

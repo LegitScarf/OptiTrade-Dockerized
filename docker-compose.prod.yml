@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  optitrade:
+    image: optitrade:latest
+    container_name: optitrade_app
+    restart: always
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./output:/app/output # Persist reports outside container
+    env_file:
+      - .env # Inject secrets (API keys) securely

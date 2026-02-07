@@ -1,34 +1,47 @@
 pipeline {
     agent any
-
     environment {
-        // Points to our "Home Base" on the server
-        DEPLOY_DIR = "/home/ubuntu/optitrade_live"
+        IMAGE_NAME = "optitrade"
+        CONTAINER_NAME = "optitrade_app"
     }
-
     stages {
-        stage('Deploy Code') {
+        stage('Build Image') {
             steps {
-                echo 'Copying files to production directory...'
-                // Copy all files from Jenkins workspace to the live folder
-                // We exclude .git and venv to prevent overwriting setup
-                sh "cp -r ./* ${DEPLOY_DIR}/"
+                echo 'Building Docker Image...'
+                // Build the image tagged as 'latest'
+                sh "docker build -t ${IMAGE_NAME}:latest ."
             }
         }
-
-        stage('Update Dependencies') {
+        stage('Deploy Container') {
             steps {
-                echo 'Installing Python requirements...'
-                // Run pip install inside the virtual environment
-                sh "${DEPLOY_DIR}/venv/bin/pip install -r ${DEPLOY_DIR}/requirements.txt"
+                echo 'Deploying new version...'
+                script {
+                    // 1. Stop and remove the old container (if it exists)
+                    try {
+                        sh "docker stop ${CONTAINER_NAME}"
+                        sh "docker rm ${CONTAINER_NAME}"
+                    } catch (Exception e) {
+                        echo "No existing container to remove."
+                    }
+                    
+                    // 2. Run the new container
+                    // Note: Ensure your Jenkins server has the .env file with API keys at /home/ubuntu/optitrade_live/.env
+                    sh """
+                        docker run -d \
+                        --name ${CONTAINER_NAME} \
+                        --restart always \
+                        -p 8501:8501 \
+                        -v /home/ubuntu/optitrade_live/output:/app/output \
+                        --env-file /home/ubuntu/optitrade_live/.env \
+                        ${IMAGE_NAME}:latest
+                    """
+                }
             }
         }
-
-        stage('Restart Application') {
+        stage('Cleanup') {
             steps {
-                echo 'Restarting OptiTrade Service...'
-                // Restart the systemd service to pick up code changes
-                sh "sudo systemctl restart optitrade"
+                echo 'Pruning unused images...'
+                sh "docker image prune -f"
             }
         }
     }
