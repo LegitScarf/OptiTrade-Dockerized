@@ -1,0 +1,21 @@
+# --- Core Frameworks ---
+crewai>=0.100.0
+crewai-tools>=0.10.0
+streamlit>=1.40.0
+
+# --- Broker Integration (Angel One) ---
+SmartApi-python>=1.5.0
+pyotp>=2.9.0
+
+# --- Data Science & Options Math ---
+pandas>=2.0.0
+numpy>=1.24.0
+scipy>=1.11.0
+
+# --- Utilities & Infrastructure ---
+python-dotenv>=1.0.0
+requests>=2.31.0
+nest-asyncio>=1.6.0
+
+logzero>=1.7.0
+websocket-client>=1.6.0
