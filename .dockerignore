@@ -1,6 +1,26 @@
+# Git
 .git
-.env
+.gitignore
+
+# Python
 __pycache__
-output/*
+*.pyc
+*.pyo
+*.pyd
+.Python
 venv/
+env/
+
+# IDE settings
+.vscode
+.idea
+
+# OptiTrade specific
+output/*
+# Note: We ignore output/ because we want to mount it as a volume, 
+# not bake old reports into the image.
+.env
+# Note: NEVER bake the .env file into the image. 
+# It should be injected at runtime.
 Jenkinsfile
+Dockerfile

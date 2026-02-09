@@ -1,31 +1,60 @@
-# Use a lightweight, official Python runtime
+# -----------------------------------------------------------------------------
+# OptiTrade Production Dockerfile
+# Optimized for CrewAI (Async) + Streamlit
+# -----------------------------------------------------------------------------
+
+# 1. Base Image: Lightweight Python 3.10 (Slug: Slim)
+# Python 3.10+ is required for modern async features used in CrewAI
 FROM python:3.10-slim
 
-# Set environment variables to prevent Python from writing .pyc files
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+# 2. Set Environment Variables
+# PYTHONDONTWRITEBYTECODE: Prevents Python from writing .pyc files (useless in containers)
+# PYTHONUNBUFFERED: Ensures logs are streamed directly to the container logs (critical for Jenkins debugging)
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
 
-# Set work directory
-WORKDIR /app
-
-# Install system dependencies (needed for some scientific packages)
+# 3. System Dependencies
+# Install build tools needed for heavy math libraries (Pandas/Numpy/Scipy)
+# curl is required for the HEALTHCHECK command
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first (better caching)
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# 4. Security: Create a non-root user
+# Running as 'root' inside Docker is a security risk. We create 'optiuser'.
+RUN useradd -m -u 1000 optiuser
 
-# Copy the rest of the application
+# 5. Set Working Directory
+WORKDIR /app
+
+# 6. Install Python Dependencies
+# We copy requirements.txt FIRST to leverage Docker layer caching.
+# If you change app.py but not requirements.txt, Docker won't re-install pip packages (saving minutes).
+COPY requirements.txt .
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
+
+# 7. Copy Application Code
 COPY . .
 
-# Expose Streamlit port
+# 8. Permissions
+# Transfer ownership of the /app directory to our non-root user
+RUN chown -R optiuser:optiuser /app
+
+# 9. Switch to Non-Root User
+USER optiuser
+
+# 10. Expose Network Port
+# Streamlit runs on 8501 by default
 EXPOSE 8501
 
-# Healthcheck to ensure the app is running
+# 11. Healthcheck
+# Docker/Jenkins will ping this every 30s. If it fails, it restarts the container.
 HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health || exit 1
 
-# Command to run the app
+# 12. Entrypoint
+# Launches the app binding to 0.0.0.0 (required to be accessible outside the container)
 ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
