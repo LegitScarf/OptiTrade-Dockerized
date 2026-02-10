@@ -10,7 +10,7 @@ from src.tools import authenticate_angel, find_nifty_expiry_dates
 # 1. Configuration & CSS
 # ---------------------------
 st.set_page_config(
-    page_title="OptiTrade | AI Options Strategist", 
+    page_title="OptiTrade v2.1 (Patched) | AI Options Strategist", 
     page_icon="📈", 
     layout="wide"
 )
@@ -76,7 +76,7 @@ with st.sidebar:
 # ---------------------------
 col1, col2 = st.columns([3, 1])
 with col1:
-    st.title("OptiTrade")
+    st.title("OptiTrade v2.1 (Patched)")
     st.markdown(f"#### Multi-Agent Nifty50 Strategist • Target: **{expiry_date}**")
 
 # Authentication Check
