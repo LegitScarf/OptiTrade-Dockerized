@@ -21,7 +21,7 @@ from .tools import (
     find_nifty_expiry_dates,
     authenticate_angel,
     download_instrument_master_json,
-    # test_all_apis,
+    test_all_apis,
     build_multi_leg_strategy,
     place_option_order
 )

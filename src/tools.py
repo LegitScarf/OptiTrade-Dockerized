@@ -1787,136 +1787,136 @@ def place_option_order(symbol: str, quantity: int, order_type: str = "BUY") -> D
 # # API TEST SUITE
 # # =============================================
 
-# @tool("Test All APIs")
-# def test_all_apis() -> Dict[str, Any]:
-#     """
-#     Test all Angel One API connections and tools.
+@tool("Test All APIs")
+def test_all_apis() -> Dict[str, Any]:
+    """
+    Test all Angel One API connections and tools.
     
-#     Returns:
-#         Dict with test results for each component
-#     """
-#     results = {
-#         "status": "testing",
-#         "tests": {}
-#     }
+    Returns:
+        Dict with test results for each component
+    """
+    results = {
+        "status": "testing",
+        "tests": {}
+    }
     
-#     print("\n" + "="*70)
-#     print("TESTING ANGEL ONE SMARTAPI INTEGRATION")
-#     print("="*70 + "\n")
+    print("\n" + "="*70)
+    print("TESTING ANGEL ONE SMARTAPI INTEGRATION")
+    print("="*70 + "\n")
     
-#     # Test 1: Authentication
-#     print("1️⃣  Testing Authentication...")
-#     auth_result = authenticate_angel.func()
-#     results["tests"]["authentication"] = {
-#         "status": auth_result.get("status"),
-#         "message": auth_result.get("message", auth_result.get("error"))
-#     }
-#     print(f"   Result: {auth_result.get('status')}")
-#     print()
+    # Test 1: Authentication
+    print("1️⃣  Testing Authentication...")
+    auth_result = authenticate_angel.func()
+    results["tests"]["authentication"] = {
+        "status": auth_result.get("status"),
+        "message": auth_result.get("message", auth_result.get("error"))
+    }
+    print(f"   Result: {auth_result.get('status')}")
+    print()
     
-#     if auth_result.get("status") != "success":
-#         results["status"] = "failed"
-#         print("❌ Authentication failed. Skipping remaining tests.\n")
-#         return results
+    if auth_result.get("status") != "success":
+        results["status"] = "failed"
+        print("❌ Authentication failed. Skipping remaining tests.\n")
+        return results
     
-#     # Test 2: LTP
-#     print("2️⃣  Testing LTP Fetch...")
-#     ltp_result = get_angel_ltp.func()
-#     results["tests"]["ltp"] = {
-#         "status": ltp_result.get("status"),
-#         "value": ltp_result.get("ltp")
-#     }
-#     print(f"   Result: {ltp_result.get('status')}")
-#     if ltp_result.get("status") == "success":
-#         print(f"   Nifty50 LTP: {ltp_result.get('ltp')}")
-#     print()
+    # Test 2: LTP
+    print("2️⃣  Testing LTP Fetch...")
+    ltp_result = get_angel_ltp.func()
+    results["tests"]["ltp"] = {
+        "status": ltp_result.get("status"),
+        "value": ltp_result.get("ltp")
+    }
+    print(f"   Result: {ltp_result.get('status')}")
+    if ltp_result.get("status") == "success":
+        print(f"   Nifty50 LTP: {ltp_result.get('ltp')}")
+    print()
     
-#     # Test 3: Quote
-#     print("3️⃣  Testing Full Quote...")
-#     quote_result = get_angel_quote.func()
-#     results["tests"]["quote"] = {
-#         "status": quote_result.get("status")
-#     }
-#     print(f"   Result: {quote_result.get('status')}")
-#     print()
+    # Test 3: Quote
+    print("3️⃣  Testing Full Quote...")
+    quote_result = get_angel_quote.func()
+    results["tests"]["quote"] = {
+        "status": quote_result.get("status")
+    }
+    print(f"   Result: {quote_result.get('status')}")
+    print()
     
-#     # Test 4: Historical Data
-#     print("4️⃣  Testing Historical Data (30 days)...")
-#     hist_result = get_angel_historical_data.func(days=30)
-#     results["tests"]["historical"] = {
-#         "status": hist_result.get("status"),
-#         "records": hist_result.get("count", 0)
-#     }
-#     print(f"   Result: {hist_result.get('status')}")
-#     if hist_result.get("status") == "success":
-#         print(f"   Records: {hist_result.get('count')}")
-#     print()
+    # Test 4: Historical Data
+    print("4️⃣  Testing Historical Data (30 days)...")
+    hist_result = get_angel_historical_data.func(days=30)
+    results["tests"]["historical"] = {
+        "status": hist_result.get("status"),
+        "records": hist_result.get("count", 0)
+    }
+    print(f"   Result: {hist_result.get('status')}")
+    if hist_result.get("status") == "success":
+        print(f"   Records: {hist_result.get('count')}")
+    print()
     
-#     # Test 5: Option Chain
-#     print("5️⃣  Testing Option Chain...")
-#     expiries = find_nifty_expiry_dates.func(1)
-#     next_expiry = expiries[0] if expiries else None
+    # Test 5: Option Chain
+    print("5️⃣  Testing Option Chain...")
+    expiries = find_nifty_expiry_dates.func(1)
+    next_expiry = expiries[0] if expiries else None
     
-#     if next_expiry:
-#         chain_result = get_angel_option_chain.func(next_expiry)
-#         results["tests"]["option_chain"] = {
-#             "status": chain_result.get("status"),
-#             "data_source": chain_result.get("data_source"),
-#             "strikes": len(chain_result.get("option_chain", []))
-#         }
-#         print(f"   Result: {chain_result.get('status')}")
-#         print(f"   Data Source: {chain_result.get('data_source')}")
-#         print(f"   Strikes: {len(chain_result.get('option_chain', []))}")
-#     else:
-#         results["tests"]["option_chain"] = {"status": "failed", "message": "No expiry date"}
-#     print()
+    if next_expiry:
+        chain_result = get_angel_option_chain.func(next_expiry)
+        results["tests"]["option_chain"] = {
+            "status": chain_result.get("status"),
+            "data_source": chain_result.get("data_source"),
+            "strikes": len(chain_result.get("option_chain", []))
+        }
+        print(f"   Result: {chain_result.get('status')}")
+        print(f"   Data Source: {chain_result.get('data_source')}")
+        print(f"   Strikes: {len(chain_result.get('option_chain', []))}")
+    else:
+        results["tests"]["option_chain"] = {"status": "failed", "message": "No expiry date"}
+    print()
     
-#     # Test 6: Technical Indicators
-#     print("6️⃣  Testing Technical Indicators...")
-#     if hist_result.get("status") == "success":
-#         tech_result = calculate_technical_indicators.func(hist_result.get("data", []))
-#         results["tests"]["technical_indicators"] = {
-#             "status": tech_result.get("status"),
-#             "signal": tech_result.get("signal")
-#         }
-#         print(f"   Result: {tech_result.get('status')}")
-#         if tech_result.get("status") == "success":
-#             print(f"   Signal: {tech_result.get('signal')}")
-#             print(f"   RSI: {tech_result.get('indicators', {}).get('rsi', 0):.2f}")
-#     else:
-#         results["tests"]["technical_indicators"] = {"status": "skipped"}
-#     print()
+    # Test 6: Technical Indicators
+    print("6️⃣  Testing Technical Indicators...")
+    if hist_result.get("status") == "success":
+        tech_result = calculate_technical_indicators.func(hist_result.get("data", []))
+        results["tests"]["technical_indicators"] = {
+            "status": tech_result.get("status"),
+            "signal": tech_result.get("signal")
+        }
+        print(f"   Result: {tech_result.get('status')}")
+        if tech_result.get("status") == "success":
+            print(f"   Signal: {tech_result.get('signal')}")
+            print(f"   RSI: {tech_result.get('indicators', {}).get('rsi', 0):.2f}")
+    else:
+        results["tests"]["technical_indicators"] = {"status": "skipped"}
+    print()
     
-#     # Test 7: Greeks
-#     print("7️⃣  Testing Options Greeks...")
-#     if ltp_result.get("status") == "success" and next_expiry:
-#         spot = ltp_result.get("ltp")
-#         atm_strike = round(spot / 50) * 50
-#         greeks_result = calculate_options_greeks.func(spot, atm_strike, next_expiry, "CE")
-#         results["tests"]["greeks"] = {
-#             "status": greeks_result.get("status"),
-#             "delta": greeks_result.get("delta")
-#         }
-#         print(f"   Result: {greeks_result.get('status')}")
-#         if greeks_result.get("status") == "success":
-#             print(f"   Delta: {greeks_result.get('delta', 0):.4f}")
-#     else:
-#         results["tests"]["greeks"] = {"status": "skipped"}
-#     print()
+    # Test 7: Greeks
+    print("7️⃣  Testing Options Greeks...")
+    if ltp_result.get("status") == "success" and next_expiry:
+        spot = ltp_result.get("ltp")
+        atm_strike = round(spot / 50) * 50
+        greeks_result = calculate_options_greeks.func(spot, atm_strike, next_expiry, "CE")
+        results["tests"]["greeks"] = {
+            "status": greeks_result.get("status"),
+            "delta": greeks_result.get("delta")
+        }
+        print(f"   Result: {greeks_result.get('status')}")
+        if greeks_result.get("status") == "success":
+            print(f"   Delta: {greeks_result.get('delta', 0):.4f}")
+    else:
+        results["tests"]["greeks"] = {"status": "skipped"}
+    print()
     
-#     # Final status
-#     all_success = all(
-#         test.get("status") in ["success", "skipped"] 
-#         for test in results["tests"].values()
-#     )
+    # Final status
+    all_success = all(
+        test.get("status") in ["success", "skipped"] 
+        for test in results["tests"].values()
+    )
     
-#     results["status"] = "success" if all_success else "partial"
+    results["status"] = "success" if all_success else "partial"
     
-#     print("="*70)
-#     print(f"TEST SUMMARY: {results['status'].upper()}")
-#     print("="*70 + "\n")
+    print("="*70)
+    print(f"TEST SUMMARY: {results['status'].upper()}")
+    print("="*70 + "\n")
     
-#     return results
+    return results
 
 
 # # =============================================
