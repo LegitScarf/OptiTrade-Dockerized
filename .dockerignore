@@ -1,26 +1,47 @@
 # Git
 .git
 .gitignore
+.github
 
-# Python
-__pycache__
-*.pyc
-*.pyo
-*.pyd
-.Python
+# Python cache ONLY (not the source!)
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.Python
+
+# Virtual environments
 venv/
 env/
+ENV/
 
-# IDE settings
+# IDE
 .vscode
 .idea
+*.swp
+*.swo
+*~
 
 # OptiTrade specific
 output/*
-# Note: We ignore output/ because we want to mount it as a volume, 
-# not bake old reports into the image.
+!output/.gitkeep
+
+# Secrets (inject at runtime, never bake in)
 .env
-# Note: NEVER bake the .env file into the image. 
-# It should be injected at runtime.
+.env.*
+*.key
+
+# CI/CD (these don't need to be in the image)
 Jenkinsfile
-Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation
+README.md
+docs/
+*.md
+
+# Tests (if you have them)
+tests/
+test_*.py
+*_test.py

@@ -1,12 +1,25 @@
 version: '3.8'
 services:
   optitrade:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # FIX: Force a clean build with no layer caching
+      args:
+        BUILDKIT_INLINE_CACHE: 0
     image: optitrade:latest
     container_name: optitrade_app
-    restart: always
+    restart: unless-stopped # FIX: Changed from 'always' to prevent restart loops on critical errors
     ports:
       - "8501:8501"
     volumes:
-      - ./output:/app/output # Persist reports outside container
+      - ./output:/app/output
     env_file:
-      - .env # Inject secrets (API keys) securely
+      - .env
+    # FIX: Add healthcheck at the compose level too
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "http://localhost:8501/_stcore/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
