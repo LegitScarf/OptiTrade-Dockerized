@@ -110,10 +110,11 @@ pipeline {
                 
                 // FIX: Verify the patched code is actually in the image.
                 // This catches build issues early before we waste time deploying a broken image.
+                // Must override entrypoint because Dockerfile sets it to 'streamlit run'.
                 echo 'Verifying patched code is present in image...'
                 sh """
-                    docker run --rm ${IMAGE_NAME}:latest \
-                    python -c "from src.tools import _safe_parse_response; print('✅ Patched code verified in image')" \
+                    docker run --rm --entrypoint python ${IMAGE_NAME}:latest \
+                    -c "from src.tools import _safe_parse_response; print('✅ Patched code verified in image')" \
                     || (echo "❌ Patched code not found in image" && exit 1)
                 """
             }
