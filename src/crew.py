@@ -3,6 +3,7 @@ import yaml
 import json
 import logging
 from typing import Dict, Any, Optional
+from pathlib import Path
 
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
@@ -86,7 +87,7 @@ class OptiTradeCrew():
     tasks_config = "config/tasks.yaml"
 
     def __init__(self, inputs: Optional[Dict[str, Any]] = None):
-    # FIX: Use absolute paths that work in Docker
+        # FIX: Use absolute paths that work in Docker
         config_dir = Path(__file__).parent.parent / "config"
         self.agents_config = safe_load_yaml(str(config_dir / "agents.yaml"))
         self.tasks_config = safe_load_yaml(str(config_dir / "tasks.yaml"))
