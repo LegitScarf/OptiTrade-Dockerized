@@ -86,12 +86,10 @@ class OptiTradeCrew():
     tasks_config = "config/tasks.yaml"
 
     def __init__(self, inputs: Optional[Dict[str, Any]] = None):
-        # FIX: CRITICAL — Override the class-level string attributes with loaded dicts.
-        # @CrewBase expects these to be dicts during crew assembly. The original code
-        # left them as strings and stored the loaded dicts in separate _data attributes,
-        # causing CrewAI's internal code to call .get() on the string "config/agents.yaml".
-        self.agents_config = safe_load_yaml(get_config_path("agents.yaml"))
-        self.tasks_config = safe_load_yaml(get_config_path("tasks.yaml"))
+    # FIX: Use absolute paths that work in Docker
+        config_dir = Path(__file__).parent.parent / "config"
+        self.agents_config = safe_load_yaml(str(config_dir / "agents.yaml"))
+        self.tasks_config = safe_load_yaml(str(config_dir / "tasks.yaml"))
         self.inputs = inputs or {}
 
     @agent
