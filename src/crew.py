@@ -86,14 +86,18 @@ class OptiTradeCrew():
     tasks_config = "config/tasks.yaml"
 
     def __init__(self, inputs: Optional[Dict[str, Any]] = None):
+        # FIX: CRITICAL — Override the class-level string attributes with loaded dicts.
+        # @CrewBase expects these to be dicts during crew assembly. The original code
+        # left them as strings and stored the loaded dicts in separate _data attributes,
+        # causing CrewAI's internal code to call .get() on the string "config/agents.yaml".
+        self.agents_config = safe_load_yaml(get_config_path("agents.yaml"))
+        self.tasks_config = safe_load_yaml(get_config_path("tasks.yaml"))
         self.inputs = inputs or {}
-        self.agents_config_data = safe_load_yaml(get_config_path("agents.yaml"))
-        self.tasks_config_data = safe_load_yaml(get_config_path("tasks.yaml"))
 
     @agent
     def market_data_agent(self) -> Agent:
         return Agent(
-            config=self.agents_config_data["market_data_agent"],
+            config=self.agents_config["market_data_agent"],
             tools=[
                 get_angel_ltp,
                 get_angel_quote,
@@ -109,7 +113,7 @@ class OptiTradeCrew():
     @agent
     def technical_analyst_agent(self) -> Agent:
         return Agent(
-            config=self.agents_config_data["technical_analyst_agent"],
+            config=self.agents_config["technical_analyst_agent"],
             tools=[calculate_technical_indicators, get_angel_historical_data],
             verbose=True,
             allow_delegation=False
@@ -118,7 +122,7 @@ class OptiTradeCrew():
     @agent
     def sentiment_analyst_agent(self) -> Agent:
         return Agent(
-            config=self.agents_config_data["sentiment_analyst_agent"],
+            config=self.agents_config["sentiment_analyst_agent"],
             tools=[analyze_sentiment_from_text, SerperDevTool()],
             verbose=True,
             allow_delegation=False
@@ -127,7 +131,7 @@ class OptiTradeCrew():
     @agent
     def volatility_greeks_agent(self) -> Agent:
         return Agent(
-            config=self.agents_config_data["volatility_greeks_agent"],
+            config=self.agents_config["volatility_greeks_agent"],
             tools=[calculate_options_greeks, get_angel_option_chain],
             verbose=True,
             allow_delegation=False
@@ -136,7 +140,7 @@ class OptiTradeCrew():
     @agent
     def backtester_agent(self) -> Agent:
         return Agent(
-            config=self.agents_config_data["backtester_agent"],
+            config=self.agents_config["backtester_agent"],
             tools=[backtest_option_strategy, get_angel_historical_data],
             verbose=True,
             allow_delegation=False
@@ -145,7 +149,7 @@ class OptiTradeCrew():
     @agent
     def strategy_synthesizer_agent(self) -> Agent:
         return Agent(
-            config=self.agents_config_data["strategy_synthesizer_agent"],
+            config=self.agents_config["strategy_synthesizer_agent"],
             tools=[build_multi_leg_strategy],
             verbose=True,
             # FIX: Changed allow_delegation to False. With True, the synthesizer
@@ -157,7 +161,7 @@ class OptiTradeCrew():
     @agent
     def risk_hedging_advisor_agent(self) -> Agent:
         return Agent(
-            config=self.agents_config_data["risk_hedging_advisor_agent"],
+            config=self.agents_config["risk_hedging_advisor_agent"],
             tools=[calculate_options_greeks],
             verbose=True,
             allow_delegation=False
@@ -166,7 +170,7 @@ class OptiTradeCrew():
     @agent
     def final_decision_agent(self) -> Agent:
         return Agent(
-            config=self.agents_config_data["final_decision_agent"],
+            config=self.agents_config["final_decision_agent"],
             tools=[place_option_order],
             verbose=True,
             # FIX: Changed allow_delegation to False. The final decision agent
@@ -179,7 +183,7 @@ class OptiTradeCrew():
     @agent
     def report_generator_agent(self) -> Agent:
         return Agent(
-            config=self.agents_config_data["report_generator_agent"],
+            config=self.agents_config["report_generator_agent"],
             verbose=True,
             allow_delegation=False
         )
@@ -187,7 +191,7 @@ class OptiTradeCrew():
     @task
     def fetch_market_data(self) -> Task:
         return Task(
-            config=self.tasks_config_data["fetch_market_data"],
+            config=self.tasks_config["fetch_market_data"],
             # FIX: Callback now routes through safe_write_json which handles
             # None, plain text, and dict outputs — previously a None json_dict
             # would crash silently here and no file would be written.
@@ -200,7 +204,7 @@ class OptiTradeCrew():
     @task
     def analyze_technicals(self) -> Task:
         return Task(
-            config=self.tasks_config_data["analyze_technicals"],
+            config=self.tasks_config["analyze_technicals"],
             callback=lambda output: safe_write_json(
                 output.json_dict if output.json_dict is not None else output.raw,
                 "technical_analysis.json"
@@ -210,7 +214,7 @@ class OptiTradeCrew():
     @task
     def analyze_sentiment(self) -> Task:
         return Task(
-            config=self.tasks_config_data["analyze_sentiment"],
+            config=self.tasks_config["analyze_sentiment"],
             callback=lambda output: safe_write_json(
                 output.json_dict if output.json_dict is not None else output.raw,
                 "sentiment_analysis.json"
@@ -220,7 +224,7 @@ class OptiTradeCrew():
     @task
     def compute_greeks_volatility(self) -> Task:
         return Task(
-            config=self.tasks_config_data["compute_greeks_volatility"],
+            config=self.tasks_config["compute_greeks_volatility"],
             callback=lambda output: safe_write_json(
                 output.json_dict if output.json_dict is not None else output.raw,
                 "greeks_volatility.json"
@@ -230,7 +234,7 @@ class OptiTradeCrew():
     @task
     def backtest_strategies(self) -> Task:
         return Task(
-            config=self.tasks_config_data["backtest_strategies"],
+            config=self.tasks_config["backtest_strategies"],
             callback=lambda output: safe_write_json(
                 output.json_dict if output.json_dict is not None else output.raw,
                 "backtest_results.json"
@@ -240,7 +244,7 @@ class OptiTradeCrew():
     @task
     def synthesize_strategy(self) -> Task:
         return Task(
-            config=self.tasks_config_data["synthesize_strategy"],
+            config=self.tasks_config["synthesize_strategy"],
             callback=lambda output: safe_write_json(
                 output.json_dict if output.json_dict is not None else output.raw,
                 "strategy_synthesis.json"
@@ -250,7 +254,7 @@ class OptiTradeCrew():
     @task
     def assess_risk_hedging(self) -> Task:
         return Task(
-            config=self.tasks_config_data["assess_risk_hedging"],
+            config=self.tasks_config["assess_risk_hedging"],
             callback=lambda output: safe_write_json(
                 output.json_dict if output.json_dict is not None else output.raw,
                 "risk_assessment.json"
@@ -260,7 +264,7 @@ class OptiTradeCrew():
     @task
     def make_final_decision(self) -> Task:
         return Task(
-            config=self.tasks_config_data["make_final_decision"],
+            config=self.tasks_config["make_final_decision"],
             callback=lambda output: safe_write_json(
                 output.json_dict if output.json_dict is not None else output.raw,
                 "final_decision.json"
@@ -290,7 +294,7 @@ class OptiTradeCrew():
         report_context = [t for t in all_tasks if t is not self.generate_report()]
 
         return Task(
-            config=self.tasks_config_data["generate_report"],
+            config=self.tasks_config["generate_report"],
             context=report_context,
             callback=report_callback
         )
