@@ -133,6 +133,17 @@ pipeline {
                         echo "⚠️  Container already removed"
                     }
 
+                    // FIX: Create output directory with correct permissions BEFORE container starts.
+                    // The container runs as UID 1000 (optiuser), but Docker volume mounts preserve
+                    // host filesystem ownership. If the host directory is owned by root, the container
+                    // process cannot write to it, causing "[Errno 13] Permission denied" errors.
+                    echo "Setting up output directory with correct permissions..."
+                    sh """
+                        mkdir -p ${HOST_CONFIG_DIR}/output
+                        chown -R 1000:1000 ${HOST_CONFIG_DIR}/output
+                        chmod -R 755 ${HOST_CONFIG_DIR}/output
+                    """
+
                     // Launch the new container
                     // FIX: Changed --restart always to --restart unless-stopped
                     // to prevent infinite restart loops if the container crashes immediately
