@@ -427,8 +427,15 @@ def _generate_simulated_option_chain(spot_price: float, atm_strike: int, expiry_
 
 
 @tool("Calculate Technical Indicators")
-def calculate_technical_indicators(historical_data: List[Dict]) -> Dict[str, Any]:
-    """Calculate technical indicators."""
+def calculate_technical_indicators(historical_data: str) -> Dict[str, Any]:
+    try:
+        import json
+        data_list = json.loads(historical_data) if isinstance(historical_data, str) else historical_data
+        
+        if not data_list or len(data_list) < 20:
+            return {"status": "failed", "error": "insufficient_data"}
+
+        df = pd.DataFrame(data_list)
     try:
         if not historical_data or len(historical_data) < 20:
             return {"status": "failed", "error": "insufficient_data"}
