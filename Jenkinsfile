@@ -137,11 +137,12 @@ pipeline {
                     // The container runs as UID 1000 (optiuser), but Docker volume mounts preserve
                     // host filesystem ownership. If the host directory is owned by root, the container
                     // process cannot write to it, causing "[Errno 13] Permission denied" errors.
+                    // Jenkins user needs sudo to run chown - ensure Jenkins has passwordless sudo configured.
                     echo "Setting up output directory with correct permissions..."
                     sh """
-                        mkdir -p ${HOST_CONFIG_DIR}/output
-                        chown -R 1000:1000 ${HOST_CONFIG_DIR}/output
-                        chmod -R 755 ${HOST_CONFIG_DIR}/output
+                        sudo mkdir -p ${HOST_CONFIG_DIR}/output
+                        sudo chown -R 1000:1000 ${HOST_CONFIG_DIR}/output
+                        sudo chmod -R 755 ${HOST_CONFIG_DIR}/output
                     """
 
                     // Launch the new container
