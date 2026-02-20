@@ -429,45 +429,51 @@ def _generate_simulated_option_chain(spot_price: float, atm_strike: int, expiry_
 @tool("Calculate Technical Indicators")
 def calculate_technical_indicators(historical_data: str) -> Dict[str, Any]:
     try:
+        # Parse the JSON string input - handles both string and list inputs
         import json
-        data_list = json.loads(historical_data) if isinstance(historical_data, str) else historical_data
+        if isinstance(historical_data, str):
+            data_list = json.loads(historical_data)
+        else:
+            data_list = historical_data
         
         if not data_list or len(data_list) < 20:
             return {"status": "failed", "error": "insufficient_data"}
 
         df = pd.DataFrame(data_list)
-    try:
-        if not historical_data or len(historical_data) < 20:
-            return {"status": "failed", "error": "insufficient_data"}
-
-        df = pd.DataFrame(historical_data)
         for col in ["close", "high", "low", "volume"]:
             df[col] = pd.to_numeric(df[col], errors="coerce")
         df.dropna(subset=["close"], inplace=True)
 
+        # Calculate EMAs
         for span in [5, 20, 50]:
             df[f"ema_{span}"] = df["close"].ewm(span=span, adjust=False).mean()
 
+        # Calculate RSI
         delta = df["close"].diff()
         gain = delta.where(delta > 0, 0).rolling(14).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
         df["rsi"] = 100 - (100 / (1 + gain / loss))
 
+        # Calculate MACD
         df["macd"] = df["close"].ewm(span=12, adjust=False).mean() - df["close"].ewm(span=26, adjust=False).mean()
         df["macd_signal"] = df["macd"].ewm(span=9, adjust=False).mean()
 
+        # Calculate Bollinger Bands
         mid = df["close"].rolling(20).mean()
         std = df["close"].rolling(20).std()
         df["bb_upper"] = mid + std * 2
         df["bb_lower"] = mid - std * 2
 
+        # Calculate ATR
         h, l, c = df["high"], df["low"], df["close"]
         tr = pd.concat([h - l, (h - c.shift()).abs(), (l - c.shift()).abs()], axis=1).max(axis=1)
         df["atr"] = tr.rolling(14).mean()
 
+        # Analyze current state
         curr = df.iloc[-1]
         trend = "bullish" if curr["ema_5"] > curr["ema_20"] else "bearish" if curr["ema_5"] < curr["ema_20"] else "neutral"
 
+        # Generate signal
         signal = "neutral"
         confidence = 0.5
         if trend == "bullish" and curr["rsi"] < 70 and curr["macd"] > curr["macd_signal"]:
@@ -706,5 +712,3 @@ def test_all_apis() -> Dict[str, Any]:
     print("=" * 70 + "\n")
 
     return results
-
-
