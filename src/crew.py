@@ -305,12 +305,12 @@ class OptiTradeCrew():
                 f.write(content)
             return output
 
-        all_tasks = self.tasks
-        report_context = [t for t in all_tasks if t is not self.generate_report()]
-
+        # CRITICAL FIX: Don't access self.tasks here - it doesn't exist yet during
+        # @task method definition. The context is defined in tasks.yaml instead.
+        # CrewAI will automatically pass outputs from context tasks defined in YAML.
+        
         return Task(
             config=self.tasks_config["generate_report"],
-            context=report_context,
             callback=report_callback
         )
 
