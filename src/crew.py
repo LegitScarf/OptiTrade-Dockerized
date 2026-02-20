@@ -79,8 +79,12 @@ def safe_write_json(data: Any, filename: str) -> bool:
 class OptiTradeCrew():
     """OptiTrade Crew - Multi-agent options trading research system"""
 
-    agents_config = "config/agents.yaml"
-    tasks_config = "config/tasks.yaml"
+    # CRITICAL FIX: Set these to None to prevent @CrewBase from attempting its own
+    # config loading. We handle config loading manually in __init__ with proper
+    # path resolution for Docker. If these are strings, @CrewBase tries to load them
+    # relative to src/ directory, which fails and generates warnings.
+    agents_config = None
+    tasks_config = None
 
     def __init__(self, inputs: Optional[Dict[str, Any]] = None):
         # CRITICAL FIX: Try multiple possible config directory locations
