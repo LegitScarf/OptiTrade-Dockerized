@@ -87,8 +87,11 @@ class OptiTradeCrew():
     tasks_config = None
 
     def __init__(self, inputs: Optional[Dict[str, Any]] = None):
-        # CRITICAL FIX: Try multiple possible config directory locations
-        # to handle both local development and Docker deployment scenarios
+        # CRITICAL FIX: Load configs FIRST before @CrewBase processes anything.
+        # We must set self.agents_config and self.tasks_config BEFORE calling
+        # any parent initialization, because @CrewBase's decorator has already
+        # registered the @agent and @task methods, and they reference these attributes.
+        
         possible_roots = [
             Path(__file__).parent.parent,  # Standard: /app (when __file__ is /app/src/crew.py)
             Path(__file__).parent,          # Fallback: /app/src (if config moved to src/)
@@ -106,6 +109,7 @@ class OptiTradeCrew():
             if agents_path.exists() and tasks_path.exists():
                 logger.info(f"✅ Found config files at: {root / 'config'}")
                 
+                # CRITICAL: Load into instance attributes immediately
                 self.agents_config = safe_load_yaml(str(agents_path))
                 self.tasks_config = safe_load_yaml(str(tasks_path))
                 
@@ -113,6 +117,13 @@ class OptiTradeCrew():
                 if self.agents_config and self.tasks_config:
                     config_loaded = True
                     logger.info(f"✅ Loaded {len(self.agents_config)} agents, {len(self.tasks_config)} tasks")
+                    
+                    # CRITICAL FIX: Also update the class-level attributes so @CrewBase sees them
+                    # This is necessary because @CrewBase may reference the class attributes
+                    # during its internal initialization
+                    OptiTradeCrew.agents_config = self.agents_config
+                    OptiTradeCrew.tasks_config = self.tasks_config
+                    
                     break
                 else:
                     logger.warning(f"⚠️  Config files found but empty or failed to parse at {root / 'config'}")
@@ -120,7 +131,6 @@ class OptiTradeCrew():
                 logger.warning(f"⚠️  Config files not found at {root / 'config'}")
         
         if not config_loaded:
-            # Provide detailed diagnostics
             logger.error("❌ CRITICAL: Could not load config files from any location")
             logger.error(f"Attempted paths:")
             for root in possible_roots:
@@ -128,24 +138,13 @@ class OptiTradeCrew():
                 logger.error(f"  - {root / 'config' / 'tasks.yaml'}")
             logger.error(f"Current working directory: {Path.cwd()}")
             logger.error(f"__file__ location: {Path(__file__)}")
-            logger.error(f"__file__.parent: {Path(__file__).parent}")
-            logger.error(f"__file__.parent.parent: {Path(__file__).parent.parent}")
-            
-            # List what actually exists
-            for root in possible_roots:
-                config_dir = root / "config"
-                if config_dir.exists():
-                    logger.error(f"Contents of {config_dir}:")
-                    for item in config_dir.iterdir():
-                        logger.error(f"  - {item.name}")
             
             raise FileNotFoundError(
                 "Config files (agents.yaml, tasks.yaml) not found in any expected location. "
                 "Check Docker image build: ensure 'COPY . .' includes the config/ directory."
             )
         
-        # CRITICAL FIX: Verify all required keys exist in the loaded configs
-        # This catches YAML structure issues early with clear error messages
+        # Verify all required keys exist
         required_agents = [
             "market_data_agent", "technical_analyst_agent", "sentiment_analyst_agent",
             "volatility_greeks_agent", "backtester_agent", "strategy_synthesizer_agent",
@@ -368,7 +367,6 @@ class OptiTradeCrew():
             memory=False,
             max_rpm=10
         )
-
 
 
 # import os
