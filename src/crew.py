@@ -79,70 +79,26 @@ def safe_write_json(data: Any, filename: str) -> bool:
 class OptiTradeCrew():
     """OptiTrade Crew - Multi-agent options trading research system"""
 
-    # CRITICAL FIX: Set these to None to prevent @CrewBase from attempting its own
-    # config loading. We handle config loading manually in __init__ with proper
-    # path resolution for Docker. If these are strings, @CrewBase tries to load them
-    # relative to src/ directory, which fails and generates warnings.
-    agents_config = None
-    tasks_config = None
+    # CRITICAL FIX: @CrewBase expects string paths relative to the crew.py file location.
+    # Since crew.py is at /app/src/crew.py and configs are at /app/config/,
+    # the relative path from src/ to config/ is ../config/
+    agents_config = "../config/agents.yaml"
+    tasks_config = "../config/tasks.yaml"
 
     def __init__(self, inputs: Optional[Dict[str, Any]] = None):
-        # CRITICAL FIX: Load configs FIRST before @CrewBase processes anything.
-        # We must set self.agents_config and self.tasks_config BEFORE calling
-        # any parent initialization, because @CrewBase's decorator has already
-        # registered the @agent and @task methods, and they reference these attributes.
+        # Since @CrewBase now has the correct relative paths at the class level,
+        # it will handle loading them automatically. We just verify they loaded correctly.
         
-        possible_roots = [
-            Path(__file__).parent.parent,  # Standard: /app (when __file__ is /app/src/crew.py)
-            Path(__file__).parent,          # Fallback: /app/src (if config moved to src/)
-            Path.cwd(),                     # Fallback: current working directory
-        ]
-        
-        config_loaded = False
-        
-        for root in possible_roots:
-            agents_path = root / "config" / "agents.yaml"
-            tasks_path = root / "config" / "tasks.yaml"
+        # Log what was loaded for debugging
+        if hasattr(self, 'agents_config') and isinstance(self.agents_config, dict):
+            logger.info(f"✅ @CrewBase loaded {len(self.agents_config)} agents")
+        else:
+            logger.error(f"❌ agents_config not loaded or wrong type: {type(self.agents_config)}")
             
-            logger.info(f"Trying config path: {root / 'config'}")
-            
-            if agents_path.exists() and tasks_path.exists():
-                logger.info(f"✅ Found config files at: {root / 'config'}")
-                
-                # CRITICAL: Load into instance attributes immediately
-                self.agents_config = safe_load_yaml(str(agents_path))
-                self.tasks_config = safe_load_yaml(str(tasks_path))
-                
-                # Verify the files actually loaded content
-                if self.agents_config and self.tasks_config:
-                    config_loaded = True
-                    logger.info(f"✅ Loaded {len(self.agents_config)} agents, {len(self.tasks_config)} tasks")
-                    
-                    # CRITICAL FIX: Also update the class-level attributes so @CrewBase sees them
-                    # This is necessary because @CrewBase may reference the class attributes
-                    # during its internal initialization
-                    OptiTradeCrew.agents_config = self.agents_config
-                    OptiTradeCrew.tasks_config = self.tasks_config
-                    
-                    break
-                else:
-                    logger.warning(f"⚠️  Config files found but empty or failed to parse at {root / 'config'}")
-            else:
-                logger.warning(f"⚠️  Config files not found at {root / 'config'}")
-        
-        if not config_loaded:
-            logger.error("❌ CRITICAL: Could not load config files from any location")
-            logger.error(f"Attempted paths:")
-            for root in possible_roots:
-                logger.error(f"  - {root / 'config' / 'agents.yaml'}")
-                logger.error(f"  - {root / 'config' / 'tasks.yaml'}")
-            logger.error(f"Current working directory: {Path.cwd()}")
-            logger.error(f"__file__ location: {Path(__file__)}")
-            
-            raise FileNotFoundError(
-                "Config files (agents.yaml, tasks.yaml) not found in any expected location. "
-                "Check Docker image build: ensure 'COPY . .' includes the config/ directory."
-            )
+        if hasattr(self, 'tasks_config') and isinstance(self.tasks_config, dict):
+            logger.info(f"✅ @CrewBase loaded {len(self.tasks_config)} tasks")
+        else:
+            logger.error(f"❌ tasks_config not loaded or wrong type: {type(self.tasks_config)}")
         
         # Verify all required keys exist
         required_agents = [
@@ -156,18 +112,19 @@ class OptiTradeCrew():
             "assess_risk_hedging", "make_final_decision", "generate_report"
         ]
         
-        missing_agents = [a for a in required_agents if a not in self.agents_config]
-        missing_tasks = [t for t in required_tasks if t not in self.tasks_config]
+        if isinstance(self.agents_config, dict):
+            missing_agents = [a for a in required_agents if a not in self.agents_config]
+            if missing_agents:
+                logger.error(f"❌ Missing agent configs: {missing_agents}")
+                logger.error(f"Available agents: {list(self.agents_config.keys())}")
+                raise KeyError(f"agents.yaml is missing required keys: {missing_agents}")
         
-        if missing_agents:
-            logger.error(f"❌ Missing agent configs: {missing_agents}")
-            logger.error(f"Available agents: {list(self.agents_config.keys())}")
-            raise KeyError(f"agents.yaml is missing required keys: {missing_agents}")
-        
-        if missing_tasks:
-            logger.error(f"❌ Missing task configs: {missing_tasks}")
-            logger.error(f"Available tasks: {list(self.tasks_config.keys())}")
-            raise KeyError(f"tasks.yaml is missing required keys: {missing_tasks}")
+        if isinstance(self.tasks_config, dict):
+            missing_tasks = [t for t in required_tasks if t not in self.tasks_config]
+            if missing_tasks:
+                logger.error(f"❌ Missing task configs: {missing_tasks}")
+                logger.error(f"Available tasks: {list(self.tasks_config.keys())}")
+                raise KeyError(f"tasks.yaml is missing required keys: {missing_tasks}")
         
         self.inputs = inputs or {}
 
