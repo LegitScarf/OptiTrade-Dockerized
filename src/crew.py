@@ -37,12 +37,21 @@ if not logger.handlers:
     logger.addHandler(ch)
     logger.setLevel(logging.INFO)
 
+# FIX: Compute absolute path to the config directory relative to THIS file
+# (src/crew.py → src/config/). The @CrewBase decorator was resolving
+# "config/agents.yaml" relative to /app (the container workdir) instead of
+# /app/src/config/, causing "File not found" warnings and empty agent/task
+# configs, which made the crew crash with 'fetch_market_data' KeyError.
+_CONFIG_DIR = Path(__file__).parent / "config"
+
 
 @CrewBase
 class OptiTradeCrew():
-    
-    agents_config = "config/agents.yaml"
-    tasks_config = "config/tasks.yaml"
+
+    # FIX: Use absolute paths so config files are found regardless of what
+    # directory the process is launched from.
+    agents_config = str(_CONFIG_DIR / "agents.yaml")
+    tasks_config  = str(_CONFIG_DIR / "tasks.yaml")
 
     @agent
     def market_data_agent(self) -> Agent:
@@ -196,5 +205,3 @@ class OptiTradeCrew():
             max_rpm=10,
             full_output=True
         )
-
-
