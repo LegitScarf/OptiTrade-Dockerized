@@ -1,9 +1,9 @@
-import streamlit as st
 import os
 import json
 import time
 import threading
 from datetime import datetime, timedelta
+import streamlit as st
 from src.crew import OptiTradeCrew
 from src.tools import authenticate_angel, find_nifty_expiry_dates
 
@@ -18,7 +18,7 @@ st.set_page_config(
 )
 
 # ─────────────────────────────────────────────
-#  GLOBAL STYLES  (Syne + DM Mono + DM Sans)
+#  GLOBAL STYLES
 # ─────────────────────────────────────────────
 st.markdown("""
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -180,7 +180,6 @@ section[data-testid="stSidebar"] > div:first-child {
     transition: all 0.18s !important;
     letter-spacing: 0.2px !important;
 }
-/* Primary CTA */
 .stButton > button[kind="primary"],
 .stButton > button[data-testid*="primary"] {
     background: var(--accent) !important;
@@ -195,7 +194,6 @@ section[data-testid="stSidebar"] > div:first-child {
     transform: translateY(-1px) !important;
     box-shadow: 0 8px 28px rgba(0,87,255,0.32) !important;
 }
-/* Secondary / reset */
 .stButton > button:not([kind="primary"]) {
     background: transparent !important;
     color: var(--txt-secondary) !important;
@@ -270,23 +268,19 @@ div[data-testid="stAlert"] {
     font-family: var(--font-body) !important;
     font-size: 13.5px !important;
 }
-/* Info */
 div[data-testid="stAlert"][class*="info"] {
     background: var(--accent-dim) !important;
     border-left: 3px solid var(--accent) !important;
     color: var(--txt-secondary) !important;
 }
-/* Warning */
 div[data-testid="stAlert"][class*="warning"] {
     background: var(--amber-dim) !important;
     border-left: 3px solid var(--amber) !important;
 }
-/* Error */
 div[data-testid="stAlert"][class*="error"] {
     background: var(--red-dim) !important;
     border-left: 3px solid var(--red) !important;
 }
-/* Success */
 div[data-testid="stAlert"][class*="success"] {
     background: var(--green-dim) !important;
     border-left: 3px solid var(--green) !important;
@@ -321,7 +315,6 @@ div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
 div[data-testid="stTabs"] button[role="tab"]:hover:not([aria-selected="true"]) {
     color: var(--txt-secondary) !important;
 }
-/* hide the default tab indicator line */
 div[data-testid="stTabs"] [role="tablist"] + div { border-top: none !important; }
 .stTabs [data-baseweb="tab-highlight"] { display: none !important; }
 .stTabs [data-baseweb="tab-border"] { display: none !important; }
@@ -368,6 +361,16 @@ div[data-testid="stJson"] {
     border-radius: 4px !important;
 }
 
+/* ── LIVE FEED CARD ── */
+.live-feed-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 16px 20px;
+    margin-bottom: 8px;
+    box-shadow: var(--shadow-sm);
+}
+
 /* ── DIVIDER ── */
 hr {
     border: none !important;
@@ -412,14 +415,9 @@ div[data-testid="column"] { gap: 0 !important; }
 
 
 # ─────────────────────────────────────────────
-#  HELPER: load JSON output safely
+#  HELPERS
 # ─────────────────────────────────────────────
 def _load_json_output(path: str) -> dict:
-    """
-    FIX: Centralised loader with explicit error keys so the UI can distinguish
-    between 'file not written yet' and 'file has bad content', rather than
-    silently falling back to an empty dict in both cases.
-    """
     if not os.path.exists(path):
         return {"_missing": True}
     try:
@@ -430,28 +428,10 @@ def _load_json_output(path: str) -> dict:
 
 
 # ─────────────────────────────────────────────
-#  HELPER: run crew in background thread
-# ─────────────────────────────────────────────
-def _run_crew(inputs: dict, result_container: dict) -> None:
-    """
-    FIX: Run crew in a background thread so the Streamlit main thread is never
-    blocked — keeping status box updates renderable and the UI responsive.
-    """
-    try:
-        result = OptiTradeCrew().crew().kickoff(inputs=inputs)
-        result_container["result"] = result
-        result_container["error"] = None
-    except Exception as e:
-        result_container["result"] = None
-        result_container["error"] = str(e)
-
-
-# ─────────────────────────────────────────────
 #  SIDEBAR
 # ─────────────────────────────────────────────
 with st.sidebar:
 
-    # ── Logo block ──────────────────────────
     st.markdown("""
     <div style="padding: 24px 8px 20px; border-bottom: 1px solid #EEF1F7; margin-bottom: 24px;">
         <div style="display:flex; align-items:center; gap:10px;">
@@ -472,7 +452,6 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Expiry Date ──────────────────────────
     st.markdown("""
     <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;
                 text-transform:uppercase;color:#8896AB;margin-bottom:12px;">
@@ -480,8 +459,6 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    # FIX: Bare except swallowed errors silently. Now we log the error, show it
-    # in sidebar, and provide a clearly-labelled manual fallback.
     try:
         expiries = find_nifty_expiry_dates.func(3)
         if not expiries:
@@ -498,7 +475,6 @@ with st.sidebar:
     st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
     st.divider()
 
-    # ── Analysis Params ──────────────────────
     st.markdown("""
     <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;
                 text-transform:uppercase;color:#8896AB;margin-bottom:8px;">
@@ -506,10 +482,10 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    lookback        = st.slider("Lookback Days",            min_value=15,  max_value=60,   value=30)
-    backtest_period = st.slider("Backtest Period",          min_value=30,  max_value=90,   value=60)
+    lookback         = st.slider("Lookback Days",            min_value=15,  max_value=60,   value=30)
+    backtest_period  = st.slider("Backtest Period",          min_value=30,  max_value=90,   value=60)
     sentiment_window = st.number_input("Sentiment Window (Days)", min_value=1, max_value=7, value=4)
-    lot_size        = st.number_input("Lot Size",           min_value=25,  max_value=1000, value=50, step=25)
+    lot_size         = st.number_input("Lot Size",           min_value=25,  max_value=1000, value=50, step=25)
 
     st.divider()
 
@@ -517,7 +493,6 @@ with st.sidebar:
         st.session_state.clear()
         st.rerun()
 
-    # ── Sidebar footer ───────────────────────
     st.markdown("""
     <div style="padding:16px 8px 0;font-family:'DM Mono',monospace;font-size:10px;
                 color:#8896AB;line-height:1.8;border-top:1px solid #EEF1F7;margin-top:8px;">
@@ -529,16 +504,11 @@ with st.sidebar:
 
 
 # ─────────────────────────────────────────────
-#  AUTH  (TTL-aware)
+#  AUTH (TTL-aware)
 # ─────────────────────────────────────────────
 AUTH_TTL_SECONDS = 3600
 
 def _should_reauthenticate() -> bool:
-    """
-    FIX: Original code re-authenticated on every render if angel_auth was absent,
-    but never re-authed if the token silently expired. Now we track auth_time and
-    force re-auth after AUTH_TTL_SECONDS (Angel One sessions expire in 60 min).
-    """
     if "angel_auth" not in st.session_state:
         return True
     if st.session_state.angel_auth.get("status") != "success":
@@ -550,7 +520,6 @@ if _should_reauthenticate():
     with st.spinner("Connecting to Angel One..."):
         auth = authenticate_angel.func()
         st.session_state.angel_auth = auth
-        # FIX: Record auth timestamp so TTL check works on subsequent renders.
         st.session_state.angel_auth_time = time.time()
 
 auth_status = st.session_state.angel_auth.get("status")
@@ -595,7 +564,6 @@ with col_status:
         </div>
         """, unsafe_allow_html=True)
     else:
-        # FIX: Show actual auth error so the user can diagnose credential issues.
         auth_msg = st.session_state.angel_auth.get("message", "Unknown error")
         st.markdown(f"""
         <div style="display:inline-flex;align-items:center;gap:7px;
@@ -627,24 +595,91 @@ st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────
-#  EXECUTION  (exact original logic, unchanged)
+#  EXECUTION
 # ─────────────────────────────────────────────
 if run_analysis:
 
     inputs = {
-        "expiry_date":       str(expiry_date),
-        "lookback_days":     lookback,
-        "backtest_period":   backtest_period,
-        "sentiment_window":  sentiment_window,
-        "lot_size":          lot_size,
+        "expiry_date":      str(expiry_date),
+        "lookback_days":    lookback,
+        "backtest_period":  backtest_period,
+        "sentiment_window": sentiment_window,
+        "lot_size":         lot_size,
     }
 
-    # Status box (styled via CSS above)
-    status_box = st.status("⚙️  OptiTrade Agents Initializing...", expanded=True)
+    # ── Task label map ────────────────────────────────────────────────
+    TASK_LABELS = {
+        "fetch_market_data":          ("📡", "Fetching Market Data"),
+        "analyze_technicals":         ("📈", "Analyzing Technicals"),
+        "analyze_sentiment":          ("📰", "Analyzing Sentiment"),
+        "compute_greeks_volatility":  ("⚡", "Computing Greeks & Volatility"),
+        "backtest_strategies":        ("🔁", "Backtesting Strategies"),
+        "synthesize_strategy":        ("🧠", "Synthesizing Strategy"),
+        "assess_risk_hedging":        ("🛡️", "Assessing Risk & Hedging"),
+        "make_final_decision":        ("🎯", "Making Final Decision"),
+        "generate_report":            ("📄", "Generating Report"),
+    }
+
+    # ── Shared live update state ──────────────────────────────────────
+    live_updates: list = []
+    updates_lock = threading.Lock()
     result_container: dict = {}
 
+    # ── Callbacks ─────────────────────────────────────────────────────
+    def _on_step(step_output):
+        """Fires after every individual agent action."""
+        try:
+            if hasattr(step_output, 'tool') and step_output.tool:
+                msg = f"🔧 Using tool: **{step_output.tool}**"
+            elif hasattr(step_output, 'thought') and step_output.thought:
+                msg = f"💭 {str(step_output.thought)[:120]}..."
+            elif hasattr(step_output, 'result') and step_output.result:
+                msg = f"✅ {str(step_output.result)[:100]}..."
+            else:
+                msg = "⚙️ Agent step in progress..."
+            with updates_lock:
+                live_updates.append(("step", msg))
+        except Exception:
+            pass
+
+    def _on_task(task_output):
+        """Fires after every completed task."""
+        try:
+            task_name = (
+                getattr(task_output, 'name', '')
+                or getattr(task_output, 'description', '')[:60]
+                or 'unknown'
+            )
+            label = None
+            for key, (icon, desc) in TASK_LABELS.items():
+                if key in str(task_name).lower().replace(" ", "_"):
+                    label = f"{icon} **{desc}** — Complete"
+                    break
+            if not label:
+                label = f"✅ Task complete: {str(task_name)[:60]}"
+            with updates_lock:
+                live_updates.append(("task", label))
+        except Exception:
+            pass
+
+    # ── Crew runner ───────────────────────────────────────────────────
+    def _run_crew(inputs: dict, result_container: dict) -> None:
+        try:
+            result = OptiTradeCrew(
+                step_callback=_on_step,
+                task_callback=_on_task
+            ).crew().kickoff(inputs=inputs)
+            result_container["result"] = result
+            result_container["error"]  = None
+        except Exception as e:
+            result_container["result"] = None
+            result_container["error"]  = str(e)
+
+    # ── Status box ────────────────────────────────────────────────────
+    status_box = st.status("⚙️  OptiTrade Agents Initializing...", expanded=True)
+
     with status_box:
-        st.write("Fetching real-time spot & option chain data...")
+        st.write("🚀 Pipeline started — agents are working...")
 
         crew_thread = threading.Thread(
             target=_run_crew,
@@ -653,17 +688,37 @@ if run_analysis:
         )
         crew_thread.start()
 
-        # FIX: Poll with timeout — never blocks forever. Surfaces an error if
-        # crew doesn't finish within 10 min instead of leaving a frozen spinner.
         CREW_TIMEOUT_SECONDS = 900
         poll_interval        = 2
         elapsed              = 0
+        last_update_count    = 0
 
+        # ── Polling loop — renders live updates every 2 seconds ──────
         while crew_thread.is_alive():
             time.sleep(poll_interval)
             elapsed += poll_interval
+
+            with updates_lock:
+                new_updates = live_updates[last_update_count:]
+                last_update_count = len(live_updates)
+
+            for kind, msg in new_updates:
+                if kind == "task":
+                    st.markdown(f"""
+                    <div style="background:rgba(0,196,140,0.08);
+                                border-left:3px solid #00C48C;
+                                border-radius:6px;padding:8px 14px;margin:4px 0;
+                                font-family:'DM Sans',sans-serif;font-size:13px;
+                                color:#0D1117;">
+                        {msg}
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.write(msg)
+
             if elapsed % 30 == 0:
-                st.write(f"Still running... ({elapsed}s elapsed)")
+                st.write(f"⏱️ Still running... ({elapsed}s elapsed)")
+
             if elapsed >= CREW_TIMEOUT_SECONDS:
                 result_container["error"] = (
                     f"Analysis timed out after {CREW_TIMEOUT_SECONDS}s. "
@@ -671,12 +726,29 @@ if run_analysis:
                 )
                 break
 
+        # Drain any final updates after thread finishes
+        with updates_lock:
+            final_updates = live_updates[last_update_count:]
+        for kind, msg in final_updates:
+            if kind == "task":
+                st.markdown(f"""
+                <div style="background:rgba(0,196,140,0.08);
+                            border-left:3px solid #00C48C;
+                            border-radius:6px;padding:8px 14px;margin:4px 0;
+                            font-family:'DM Sans',sans-serif;font-size:13px;
+                            color:#0D1117;">
+                    {msg}
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.write(msg)
+
         if result_container.get("error"):
             status_box.update(label="❌  System Error", state="error", expanded=True)
             st.error(f"Execution failed: {result_container['error']}")
             st.stop()
 
-        st.write("Synthesizing multi-leg strategies...")
+        st.write("✅ All agents complete — building dashboard...")
         status_box.update(label="✅  Analysis Complete", state="complete", expanded=False)
 
     # ─────────────────────────────────────────
@@ -684,7 +756,6 @@ if run_analysis:
     # ─────────────────────────────────────────
     decision_data = _load_json_output("output/final_decision.json")
 
-    # FIX: Surface load errors prominently rather than showing empty metrics.
     if decision_data.get("_missing"):
         st.warning(
             "⚠️  `final_decision.json` was not written — "
@@ -696,7 +767,6 @@ if run_analysis:
             f"{decision_data['_load_error']}"
         )
 
-    # FIX: simulation_warning passthrough — warn prominently if on simulated data.
     market_data = _load_json_output("output/market_data.json")
     if (market_data.get("simulation_warning")
             or market_data.get("data_source") == "simulated"):
@@ -706,7 +776,7 @@ if run_analysis:
             "Do not act on this output with real capital."
         )
 
-    # ── Section: Metrics ─────────────────────
+    # ── Metrics ──────────────────────────────
     st.markdown("""
     <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;
                 text-transform:uppercase;color:#8896AB;margin:24px 0 12px;">
@@ -730,7 +800,7 @@ if run_analysis:
     with m4:
         st.metric("AI Confidence", f"{conf * 100:.0f}%")
 
-    # ── Rationale Banner ─────────────────────
+    # ── Rationale banner ─────────────────────
     rationale = decision_data.get("rationale", "See full report for details.")
     st.markdown(f"""
     <div style="background:rgba(0,87,255,0.06);border:1px solid rgba(0,87,255,0.12);
@@ -756,7 +826,6 @@ if run_analysis:
     with tab_report:
         report_path = "output/trading_report.md"
         if os.path.exists(report_path):
-            # Wrap in a styled card
             st.markdown("""
             <div style="background:#FFFFFF;border:1px solid #E2E6EE;border-radius:14px;
                         overflow:hidden;margin-top:16px;">
@@ -781,11 +850,10 @@ if run_analysis:
     with tab_tech:
         tech_data = _load_json_output("output/technical_analysis.json")
         if tech_data.get("_missing"):
-            st.warning("⚠️  `technical_analysis.json` was not found. Check agent logs.")
+            st.warning("⚠️  `technical_analysis.json` was not found.")
         elif tech_data.get("_load_error"):
             st.warning(f"⚠️  Could not parse `technical_analysis.json`: {tech_data['_load_error']}")
         else:
-            # Styled header for the JSON block
             st.markdown("""
             <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;
                         color:#0D1117;margin:16px 0 10px;">
@@ -805,7 +873,7 @@ if run_analysis:
 
 else:
     # ─────────────────────────────────────────
-    #  EMPTY STATE  (shown before first run)
+    #  EMPTY STATE
     # ─────────────────────────────────────────
     st.markdown("""
     <div class="anim-fadein" style="
@@ -829,7 +897,7 @@ else:
                             letter-spacing:1px;text-transform:uppercase;
                             color:#8896AB;margin-bottom:6px;">Agents</div>
                 <div style="font-family:'Syne',sans-serif;font-weight:700;
-                            font-size:20px;color:#0057FF;">5</div>
+                            font-size:20px;color:#0057FF;">9</div>
             </div>
             <div style="background:#F8F9FC;border:1px solid #E2E6EE;border-radius:10px;
                         padding:14px 20px;min-width:140px;text-align:center;">
@@ -850,6 +918,3 @@ else:
         </div>
     </div>
     """, unsafe_allow_html=True)
-
-
-

@@ -2,7 +2,7 @@ import os
 import yaml
 import json
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Callable
 from pathlib import Path
 
 from crewai import Agent, Crew, Process, Task
@@ -38,8 +38,8 @@ if not logger.handlers:
     logger.setLevel(logging.INFO)
 
 # FIX: config/ is at project root /app/config/, two levels up from this file
-# (/app/src/crew.py → /app/src/ → /app/). Using absolute paths here ensures
-# CrewAI finds agents.yaml and tasks.yaml regardless of the process cwd.
+# (/app/src/crew.py → /app/src/ → /app/). Using absolute paths ensures
+# CrewAI finds agents.yaml and tasks.yaml regardless of process cwd.
 _CONFIG_DIR = Path(__file__).parent.parent / "config"
 
 
@@ -48,6 +48,14 @@ class OptiTradeCrew():
 
     agents_config = str(_CONFIG_DIR / "agents.yaml")
     tasks_config  = str(_CONFIG_DIR / "tasks.yaml")
+
+    # FIX: Accept optional callbacks so the Streamlit UI can receive
+    # live updates as each agent step and task completes, instead of
+    # waiting silently for the entire pipeline to finish.
+    def __init__(self, step_callback: Optional[Callable] = None,
+                       task_callback: Optional[Callable] = None):
+        self._step_callback = step_callback
+        self._task_callback = task_callback
 
     @agent
     def market_data_agent(self) -> Agent:
@@ -199,5 +207,8 @@ class OptiTradeCrew():
             verbose=True,
             memory=False,
             max_rpm=30,
-            full_output=True
+            full_output=True,
+            # FIX: Wire up live callbacks for Streamlit UI streaming
+            step_callback=self._step_callback,
+            task_callback=self._task_callback
         )
