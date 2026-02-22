@@ -315,7 +315,7 @@ with st.sidebar:
                         background:linear-gradient(135deg,#1400FF,#6B00FF);
                         display:flex;align-items:center;justify-content:center;
                         font-size:15px;color:white;flex-shrink:0;
-                        box-shadow:0 4px 16px rgba(20,0,255,0.35);">◈</div>
+                        box-shadow:0 4px 16px rgba(20,0,255,0.35);">&#9672;</div>
             <div>
                 <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:20px;
                             font-weight:600;color:white;letter-spacing:-0.3px;line-height:1;">
@@ -340,7 +340,8 @@ with st.sidebar:
 
     st.markdown("""<div style="font-family:'IBM Plex Mono',monospace;font-size:9px;
                 letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,0.26);
-                padding:0 2px;margin-bottom:10px;">Target Expiry</div>""", unsafe_allow_html=True)
+                padding:0 2px;margin-bottom:10px;">Target Expiry</div>""",
+                unsafe_allow_html=True)
 
     try:
         expiries = find_nifty_expiry_dates.func(3)
@@ -355,7 +356,8 @@ with st.sidebar:
     st.markdown("<div style='height:22px'></div>", unsafe_allow_html=True)
     st.markdown("""<div style="font-family:'IBM Plex Mono',monospace;font-size:9px;
                 letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,0.26);
-                padding:0 2px;margin-bottom:10px;">Parameters</div>""", unsafe_allow_html=True)
+                padding:0 2px;margin-bottom:10px;">Parameters</div>""",
+                unsafe_allow_html=True)
 
     lookback         = st.slider("Lookback Days",            min_value=15,  max_value=60,   value=30)
     backtest_period  = st.slider("Backtest Period",          min_value=30,  max_value=90,   value=60)
@@ -364,12 +366,13 @@ with st.sidebar:
 
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
     st.divider()
-    if st.button("↺  Reset Session", use_container_width=True):
+    if st.button("&#8635;  Reset Session", use_container_width=True):
         st.session_state.clear()
         st.rerun()
     st.markdown("""<div style="padding:20px 4px 8px;font-family:'IBM Plex Mono',monospace;
                 font-size:8.5px;color:rgba(255,255,255,0.15);line-height:2.2;letter-spacing:0.5px;">
-                Not financial advice · © OptiTrade 2025</div>""", unsafe_allow_html=True)
+                Not financial advice · &copy; OptiTrade 2025</div>""",
+                unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────
@@ -396,7 +399,6 @@ auth_status = st.session_state.angel_auth.get("status")
 # ─────────────────────────────────────────────
 #  HEADER
 # ─────────────────────────────────────────────
-# Signature thick rule + meta bar
 st.markdown("""
 <div style="border-top:4px solid #0C0C0E;padding-top:0;margin-bottom:0;">
     <div style="display:flex;align-items:center;justify-content:space-between;
@@ -445,7 +447,8 @@ with col_title:
     """, unsafe_allow_html=True)
 
 with col_status:
-    st.markdown("<div style='padding-top:38px;display:flex;justify-content:flex-end;'>", unsafe_allow_html=True)
+    st.markdown("<div style='padding-top:38px;display:flex;justify-content:flex-end;'>",
+                unsafe_allow_html=True)
     if auth_status == "success":
         st.markdown("""
         <div style="display:inline-flex;flex-direction:column;align-items:flex-end;gap:6px;">
@@ -468,7 +471,8 @@ with col_status:
         <div style="display:inline-flex;flex-direction:column;align-items:flex-end;gap:6px;">
             <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px;
                         border-radius:4px;background:#FFF5F5;border:1px solid rgba(217,48,37,0.20);">
-                <span style="width:7px;height:7px;border-radius:50%;background:#D93025;display:inline-block;"></span>
+                <span style="width:7px;height:7px;border-radius:50%;background:#D93025;
+                             display:inline-block;"></span>
                 <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;
                              font-weight:500;color:#8B1A1A;letter-spacing:1px;text-transform:uppercase;">
                     Offline
@@ -484,11 +488,12 @@ with col_status:
 st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
 st.divider()
 
+
 # ─────────────────────────────────────────────
 #  CTA BUTTON
 # ─────────────────────────────────────────────
 st.markdown("<div style='margin:16px 0 6px;'>", unsafe_allow_html=True)
-run_analysis = st.button("⚡  Run Full Analysis", type="primary", use_container_width=True)
+run_analysis = st.button("&#9889;  Run Full Analysis", type="primary", use_container_width=True)
 st.markdown("</div>", unsafe_allow_html=True)
 
 
@@ -509,7 +514,7 @@ if run_analysis:
         "fetch_market_data":          ("01", "Market Data",  "Real-time spot & option chain"),
         "analyze_technicals":         ("02", "Technicals",   "EMA · RSI · MACD · Bollinger"),
         "analyze_sentiment":          ("03", "Sentiment",    "News flow & psychology"),
-        "compute_greeks_volatility":  ("04", "Greeks & Vol", "Δ Γ Θ V · IV surface"),
+        "compute_greeks_volatility":  ("04", "Greeks & Vol", "&#916; &#915; &#920; V · IV surface"),
         "backtest_strategies":        ("05", "Backtesting",  "Historical simulation"),
         "synthesize_strategy":        ("06", "Synthesis",    "Multi-signal fusion"),
         "assess_risk_hedging":        ("07", "Risk",         "Stress tests · stops"),
@@ -572,7 +577,7 @@ if run_analysis:
     pipeline_slot = st.empty()
 
     def _render_pipeline(done: list, active_tool: str = ""):
-        total = len(TASK_LABELS)
+        total    = len(TASK_LABELS)
         next_idx = len(done)
         rows_html = ""
 
@@ -583,12 +588,18 @@ if run_analysis:
             if is_done:
                 row_bg = "#F0FBF5"; row_bd = "rgba(18,160,92,0.15)"
                 nb = "#12A05C"; nc = "white"; namec = "#0A6640"; descc = "rgba(10,102,64,0.50)"
-                badge = "✓"; extra = ""
+                badge = "&#10003;"; extra = ""
             elif is_current:
                 row_bg = "#F6F7FF"; row_bd = "rgba(20,0,255,0.15)"
                 nb = "#1400FF"; nc = "white"; namec = "#1400FF"; descc = "rgba(20,0,255,0.45)"
                 badge = num
-                extra = f' <span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:rgba(20,0,255,0.55);background:rgba(20,0,255,0.06);padding:2px 7px;border-radius:3px;border:1px solid rgba(20,0,255,0.12);margin-left:8px;">{active_tool[:30]}</span>' if active_tool else ""
+                tool_pill = (
+                    f' <span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;'
+                    f'color:rgba(20,0,255,0.55);background:rgba(20,0,255,0.06);'
+                    f'padding:2px 7px;border-radius:3px;border:1px solid rgba(20,0,255,0.12);'
+                    f'margin-left:8px;">{active_tool[:30]}</span>'
+                ) if active_tool else ""
+                extra = tool_pill
             else:
                 row_bg = "transparent"; row_bd = "rgba(12,12,14,0.07)"
                 nb = "#F4F4F8"; nc = "#AEAEBA"; namec = "#AEAEBA"; descc = "rgba(12,12,14,0.20)"
@@ -621,7 +632,7 @@ if run_analysis:
                         Pipeline Progress
                     </span>
                     <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6B6B78;">
-                        {len(done)}/{total} · {pct}%
+                        {len(done)}/{total} &middot; {pct}%
                     </span>
                 </div>
                 <div style="height:3px;background:#E8E8EF;border-radius:2px;overflow:hidden;">
@@ -637,7 +648,7 @@ if run_analysis:
     _render_pipeline([])
 
     # ── Status / log box ─────────────────────────────────────────────
-    status_box = st.status("⚙️  Initialising pipeline...", expanded=True)
+    status_box = st.status("&#9881;  Initialising pipeline...", expanded=True)
 
     with status_box:
         st.write("9 agents queued — sequential execution starting...")
@@ -666,7 +677,7 @@ if run_analysis:
                     if msg in TASK_LABELS and msg not in completed_tasks_set:
                         completed_tasks_set.append(msg)
                         _, name, _ = TASK_LABELS[msg]
-                        st.write(f"✓  {name} complete")
+                        st.write(f"&#10003;  {name} complete")
                     current_tool_state["tool"] = ""
                     rerender = True
                 elif kind == "step":
@@ -674,15 +685,15 @@ if run_analysis:
                         current_tool_state["tool"] = msg[5:]
                         rerender = True
                     elif msg.startswith("thought:"):
-                        st.write(f"↳  {msg[8:108]}")
+                        st.write(f"&#8627;  {msg[8:108]}")
                     elif msg.startswith("result:"):
-                        st.write(f"↳  {msg[7:90]}")
+                        st.write(f"&#8627;  {msg[7:90]}")
 
             if rerender:
                 _render_pipeline(completed_tasks_set, current_tool_state["tool"])
 
             if elapsed % 30 == 0:
-                st.write(f"⏱  {elapsed}s · {len(completed_tasks_set)}/9 tasks done")
+                st.write(f"&#9201;  {elapsed}s &middot; {len(completed_tasks_set)}/9 tasks done")
 
             if elapsed >= CREW_TIMEOUT_SECONDS:
                 result_container["error"] = (
@@ -698,29 +709,32 @@ if run_analysis:
             if kind == "task" and msg in TASK_LABELS and msg not in completed_tasks_set:
                 completed_tasks_set.append(msg)
                 _, name, _ = TASK_LABELS[msg]
-                st.write(f"✓  {name} complete")
+                st.write(f"&#10003;  {name} complete")
         _render_pipeline(completed_tasks_set)
 
         if result_container.get("error"):
-            status_box.update(label="❌  Pipeline Error", state="error", expanded=True)
+            status_box.update(label="&#10060;  Pipeline Error", state="error", expanded=True)
             st.error(f"Execution failed: {result_container['error']}")
             st.stop()
 
-        st.write("✅  All 9 agents complete — rendering dashboard...")
-        status_box.update(label="✅  Analysis Complete", state="complete", expanded=False)
+        st.write("&#10003;  All 9 agents complete — rendering dashboard...")
+        status_box.update(label="&#10003;  Analysis Complete", state="complete", expanded=False)
 
     # ─────────────────────────────────────────
     #  DASHBOARD  (logic unchanged)
     # ─────────────────────────────────────────
     decision_data = _load_json_output("output/final_decision.json")
     if decision_data.get("_missing"):
-        st.warning("⚠️  `final_decision.json` was not written — decision agent may have failed.")
+        st.warning("&#9888;  `final_decision.json` was not written — decision agent may have failed.")
     elif decision_data.get("_load_error"):
-        st.warning(f"⚠️  Could not parse `final_decision.json`: {decision_data['_load_error']}")
+        st.warning(f"&#9888;  Could not parse `final_decision.json`: {decision_data['_load_error']}")
 
     market_data = _load_json_output("output/market_data.json")
     if market_data.get("simulation_warning") or market_data.get("data_source") == "simulated":
-        st.warning("⚠️ **Simulated Data:** Live option chain unavailable. Do not act on this output with real capital.")
+        st.warning(
+            "&#9888; **Simulated Data:** Live option chain unavailable. "
+            "Do not act on this output with real capital."
+        )
 
     recommendation = decision_data.get("final_decision", "HOLD").upper()
     strike         = decision_data.get("strike", "N/A")
@@ -729,11 +743,11 @@ if run_analysis:
     rationale      = decision_data.get("rationale", "See full report for details.")
 
     if recommendation in ("CALL", "BUY"):
-        sig_bg, sig_bd, sig_fg, sig_badge = "var(--bull-bg)", "var(--bull-border)", "var(--bull)", "#12A05C"
+        sig_bg, sig_bd, sig_fg, sig_badge = "#F0FBF5", "rgba(18,160,92,0.18)", "#0A6640", "#12A05C"
     elif recommendation in ("PUT", "SELL"):
-        sig_bg, sig_bd, sig_fg, sig_badge = "var(--bear-bg)", "var(--bear-border)", "var(--bear)", "#D93025"
+        sig_bg, sig_bd, sig_fg, sig_badge = "#FFF5F5", "rgba(217,48,37,0.18)", "#8B1A1A", "#D93025"
     else:
-        sig_bg, sig_bd, sig_fg, sig_badge = "var(--neutral-bg)", "var(--neutral-border)", "var(--neutral)", "#C49A00"
+        sig_bg, sig_bd, sig_fg, sig_badge = "#FFFBEB", "rgba(196,154,0,0.20)", "#7A5C00", "#C49A00"
 
     # ── Decision banner ───────────────────────
     st.markdown(f"""
@@ -742,7 +756,7 @@ if run_analysis:
                 padding:30px 32px;margin:28px 0 20px;">
         <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:3px;
                     text-transform:uppercase;color:{sig_fg};opacity:0.55;margin-bottom:16px;">
-            Strategy Recommendation · AI-Generated
+            Strategy Recommendation &middot; AI-Generated
         </div>
         <div style="display:flex;align-items:flex-start;gap:28px;flex-wrap:wrap;">
             <div style="background:{sig_badge};color:white;
@@ -753,26 +767,23 @@ if run_analysis:
             </div>
             <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
                 <div>
-                    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:{sig_fg};
-                                opacity:0.5;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">
-                        Strike
-                    </div>
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;
+                                color:{sig_fg};opacity:0.5;letter-spacing:1.5px;
+                                text-transform:uppercase;margin-bottom:4px;">Strike</div>
                     <div style="font-family:'Cormorant Garamond',serif;font-size:30px;
                                 font-weight:600;color:#0C0C0E;letter-spacing:-1px;">{strike}</div>
                 </div>
                 <div>
-                    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:{sig_fg};
-                                opacity:0.5;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">
-                        Entry
-                    </div>
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;
+                                color:{sig_fg};opacity:0.5;letter-spacing:1.5px;
+                                text-transform:uppercase;margin-bottom:4px;">Entry</div>
                     <div style="font-family:'Cormorant Garamond',serif;font-size:30px;
-                                font-weight:600;color:#0C0C0E;letter-spacing:-1px;">₹{entry_price}</div>
+                                font-weight:600;color:#0C0C0E;letter-spacing:-1px;">&#8377;{entry_price}</div>
                 </div>
                 <div>
-                    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:{sig_fg};
-                                opacity:0.5;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">
-                        Confidence
-                    </div>
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;
+                                color:{sig_fg};opacity:0.5;letter-spacing:1.5px;
+                                text-transform:uppercase;margin-bottom:4px;">Confidence</div>
                     <div style="font-family:'Cormorant Garamond',serif;font-size:30px;
                                 font-weight:600;color:{sig_badge};letter-spacing:-1px;">
                         {conf*100:.0f}%
@@ -787,7 +798,7 @@ if run_analysis:
             </div>
             <div style="font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;
                         font-size:17px;color:#2E2E35;line-height:1.75;max-width:820px;">
-                "{rationale}"
+                &ldquo;{rationale}&rdquo;
             </div>
         </div>
     </div>
@@ -801,7 +812,7 @@ if run_analysis:
     m1, m2, m3, m4 = st.columns(4, gap="medium")
     with m1: st.metric("Recommendation", recommendation)
     with m2: st.metric("Strike", str(strike))
-    with m3: st.metric("Entry Price", f"₹{entry_price}")
+    with m3: st.metric("Entry Price", f"\u20b9{entry_price}")
     with m4: st.metric("AI Confidence", f"{conf * 100:.0f}%")
 
     st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
@@ -817,10 +828,13 @@ if run_analysis:
                         border-radius:0 0 12px 12px;overflow:hidden;margin-top:4px;">
                 <div style="padding:13px 24px;background:#FAFAF7;border-bottom:1px solid #E8E8EF;
                             display:flex;align-items:center;justify-content:space-between;">
-                    <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;
-                                 text-transform:uppercase;color:#6B6B78;">NIFTY 50 · Options Analysis Report</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;
+                                 letter-spacing:2px;text-transform:uppercase;color:#6B6B78;">
+                        NIFTY 50 &middot; Options Analysis Report
+                    </span>
                     <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#AEAEBA;">
-                        output/trading_report.md</span>
+                        output/trading_report.md
+                    </span>
                 </div>
                 <div style="padding:24px 28px;">
             """, unsafe_allow_html=True)
@@ -828,38 +842,75 @@ if run_analysis:
                 st.markdown(f.read())
             st.markdown("</div></div>", unsafe_allow_html=True)
         else:
-            st.warning("⚠️  Trading report was not generated. Check agent logs.")
+            st.warning("&#9888;  Trading report was not generated. Check agent logs.")
 
     with tab_tech:
         tech_data = _load_json_output("output/technical_analysis.json")
         if tech_data.get("_missing"):
-            st.warning("⚠️  `technical_analysis.json` was not found.")
+            st.warning("&#9888;  `technical_analysis.json` was not found.")
         elif tech_data.get("_load_error"):
-            st.warning(f"⚠️  Parse error: {tech_data['_load_error']}")
+            st.warning(f"&#9888;  Parse error: {tech_data['_load_error']}")
         else:
             st.markdown("""<div style="font-family:'IBM Plex Mono',monospace;font-size:9px;
                         letter-spacing:2px;text-transform:uppercase;color:#AEAEBA;margin-bottom:14px;">
-                        Technical Indicators · Raw Output</div>""", unsafe_allow_html=True)
+                        Technical Indicators &middot; Raw Output</div>""", unsafe_allow_html=True)
             st.json(tech_data)
 
     with tab_json:
         st.markdown("""<div style="font-family:'IBM Plex Mono',monospace;font-size:9px;
                     letter-spacing:2px;text-transform:uppercase;color:#AEAEBA;margin-bottom:14px;">
-                    Final Decision · Raw JSON</div>""", unsafe_allow_html=True)
+                    Final Decision &middot; Raw JSON</div>""", unsafe_allow_html=True)
         st.json(decision_data)
 
 
 else:
     # ─────────────────────────────────────────
     #  EMPTY STATE
+    #  FIX: entire block is ONE st.markdown() call.
+    #  Pipeline strip is built as a Python string first, then interpolated.
+    #  Never split a single HTML structure across multiple st.markdown() calls —
+    #  Streamlit renders each call as an isolated HTML island, so unclosed tags
+    #  from one call are never closed by a subsequent call, causing the browser
+    #  to reject the structure and spill raw HTML as visible text.
     # ─────────────────────────────────────────
-    st.markdown("""
+
+    preview_steps = [
+        ("01", "Market Data"), ("02", "Technicals"), ("03", "Sentiment"),
+        ("04", "Greeks"),      ("05", "Backtest"),   ("06", "Synthesis"),
+        ("07", "Risk"),        ("08", "Decision"),   ("09", "Report"),
+    ]
+
+    # Build the entire pipeline strip as one Python string
+    pipeline_strip_html = ""
+    for i, (num, name) in enumerate(preview_steps):
+        connector = (
+            ""
+            if i == len(preview_steps) - 1
+            else '<div style="width:20px;height:1px;background:#E8E8EF;flex-shrink:0;"></div>'
+        )
+        pipeline_strip_html += f"""
+        <div style="display:inline-flex;align-items:center;gap:0;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:5px;
+                        background:white;border:1px solid #E8E8EF;border-radius:6px;
+                        padding:10px 12px;min-width:64px;
+                        box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;
+                             font-weight:600;color:#1400FF;">{num}</span>
+                <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;
+                             font-weight:500;color:#6B6B78;text-align:center;
+                             white-space:nowrap;">{name}</span>
+            </div>
+            {connector}
+        </div>"""
+
+    st.markdown(f"""
     <div class="anim-in" style="padding:52px 0 32px;">
 
+        <!-- Hero -->
         <div style="max-width:740px;margin:0 auto 52px;text-align:center;">
             <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:3.5px;
                         text-transform:uppercase;color:#AEAEBA;margin-bottom:22px;">
-                AI-Powered · 9 Agents · Live NSE Data
+                AI-Powered &middot; 9 Agents &middot; Live NSE Data
             </div>
             <div style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;
                         font-size:58px;color:#0C0C0E;line-height:1.0;
@@ -903,11 +954,11 @@ else:
                 <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;
                             text-transform:uppercase;color:#AEAEBA;margin-bottom:8px;">Model</div>
                 <div style="font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:600;
-                            color:#0C0C0E;letter-spacing:-1.5px;line-height:1;">GPT‑4o</div>
+                            color:#0C0C0E;letter-spacing:-1.5px;line-height:1;">GPT&#8209;4o</div>
             </div>
         </div>
 
-        <!-- Pipeline preview -->
+        <!-- Pipeline preview — strip built entirely in Python above -->
         <div style="max-width:900px;margin:0 auto;">
             <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2.5px;
                         text-transform:uppercase;color:#AEAEBA;margin-bottom:14px;text-align:center;">
@@ -915,30 +966,9 @@ else:
             </div>
             <div style="display:flex;align-items:center;justify-content:center;
                         flex-wrap:wrap;gap:0;row-gap:8px;">
-    """, unsafe_allow_html=True)
-
-    preview_steps = [
-        ("01","Market Data"), ("02","Technicals"), ("03","Sentiment"),
-        ("04","Greeks"), ("05","Backtest"), ("06","Synthesis"),
-        ("07","Risk"), ("08","Decision"), ("09","Report"),
-    ]
-    for i, (num, name) in enumerate(preview_steps):
-        connector = "" if i == len(preview_steps)-1 else \
-            '<div style="width:20px;height:1px;background:#E8E8EF;flex-shrink:0;"></div>'
-        st.markdown(f"""
-        <div style="display:inline-flex;align-items:center;gap:0;">
-            <div style="display:flex;flex-direction:column;align-items:center;gap:5px;
-                        background:white;border:1px solid #E8E8EF;border-radius:6px;
-                        padding:10px 12px;min-width:64px;
-                        box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;
-                             font-weight:600;color:#1400FF;">{num}</span>
-                <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;
-                             font-weight:500;color:#6B6B78;text-align:center;
-                             white-space:nowrap;">{name}</span>
+                {pipeline_strip_html}
             </div>
-            {connector}
         </div>
-        """, unsafe_allow_html=True)
 
-    st.markdown("</div></div></div>", unsafe_allow_html=True)
+    </div>
+    """, unsafe_allow_html=True)
