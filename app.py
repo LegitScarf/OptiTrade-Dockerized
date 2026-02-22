@@ -903,10 +903,37 @@ else:
             {connector}
         </div>"""
 
-    st.markdown(f"""
+    preview_steps = [
+        ("01", "Market Data"), ("02", "Technicals"), ("03", "Sentiment"),
+        ("04", "Greeks"),      ("05", "Backtest"),   ("06", "Synthesis"),
+        ("07", "Risk"),        ("08", "Decision"),   ("09", "Report"),
+    ]
+
+    pipeline_strip_html = ""
+    for i, (num, name) in enumerate(preview_steps):
+        connector = (
+            ""
+            if i == len(preview_steps) - 1
+            else '<div style="width:20px;height:1px;background:#E8E8EF;flex-shrink:0;"></div>'
+        )
+        pipeline_strip_html += f"""
+        <div style="display:inline-flex;align-items:center;gap:0;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:5px;
+                        background:white;border:1px solid #E8E8EF;border-radius:6px;
+                        padding:10px 12px;min-width:64px;
+                        box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;
+                             font-weight:600;color:#1400FF;">{num}</span>
+                <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;
+                             font-weight:500;color:#6B6B78;text-align:center;
+                             white-space:nowrap;">{name}</span>
+            </div>
+            {connector}
+        </div>"""
+
+    empty_state_html = """
     <div class="anim-in" style="padding:52px 0 32px;">
 
-        <!-- Hero -->
         <div style="max-width:740px;margin:0 auto 52px;text-align:center;">
             <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:3.5px;
                         text-transform:uppercase;color:#AEAEBA;margin-bottom:22px;">
@@ -928,7 +955,6 @@ else:
             </div>
         </div>
 
-        <!-- Stat strip -->
         <div style="display:flex;gap:0;border:1px solid #E8E8EF;border-radius:10px;
                     overflow:hidden;max-width:680px;margin:0 auto 52px;
                     box-shadow:0 2px 8px rgba(0,0,0,0.04);">
@@ -958,7 +984,6 @@ else:
             </div>
         </div>
 
-        <!-- Pipeline preview — strip built entirely in Python above -->
         <div style="max-width:900px;margin:0 auto;">
             <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2.5px;
                         text-transform:uppercase;color:#AEAEBA;margin-bottom:14px;text-align:center;">
@@ -966,9 +991,11 @@ else:
             </div>
             <div style="display:flex;align-items:center;justify-content:center;
                         flex-wrap:wrap;gap:0;row-gap:8px;">
-                {pipeline_strip_html}
+                PIPELINE_STRIP_PLACEHOLDER
             </div>
         </div>
 
     </div>
-    """, unsafe_allow_html=True)
+    """.replace("PIPELINE_STRIP_PLACEHOLDER", pipeline_strip_html)
+
+    st.markdown(empty_state_html, unsafe_allow_html=True)
