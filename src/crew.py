@@ -198,6 +198,6 @@ class OptiTradeCrew():
             process=Process.sequential,
             verbose=True,
             memory=False,
-            max_rpm=10,
+            max_rpm=30,
             full_output=True
         )

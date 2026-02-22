@@ -655,7 +655,7 @@ if run_analysis:
 
         # FIX: Poll with timeout — never blocks forever. Surfaces an error if
         # crew doesn't finish within 10 min instead of leaving a frozen spinner.
-        CREW_TIMEOUT_SECONDS = 600
+        CREW_TIMEOUT_SECONDS = 900
         poll_interval        = 2
         elapsed              = 0
 
