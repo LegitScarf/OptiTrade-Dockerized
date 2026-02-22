@@ -8,6 +8,16 @@ import numpy as np
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 from crewai.tools import tool
+import requests
+
+# FIX: SmartApi-python unconditionally calls logzero.logfile('logs/smartapi.log')
+# at SmartConnect instantiation time, hardcoded as a relative path. When the
+# container runs with a non-owner UID (Jenkins --user flag), it cannot create
+# the 'logs/' directory under /app, causing [Errno 13] Permission denied: 'logs'.
+# Patching logzero.logfile to a no-op BEFORE SmartConnect is imported prevents
+# the library from ever attempting to create the directory.
+import logzero as _logzero
+_logzero.logfile = lambda *args, **kwargs: None
 from SmartApi import SmartConnect
 import requests
 
