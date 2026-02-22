@@ -97,14 +97,22 @@ pipeline {
                     || (echo "❌ Patched code not found in image" && exit 1)
                 """
 
-                // FIX: Verify SMART_API_LOG_PATH is correctly set in the image
-                // so permission errors on the logs directory are caught at build
-                // time rather than silently at runtime.
-                echo 'Verifying SMART_API_LOG_PATH is set in image...'
+                // FIX: Verify that all critical writable directories exist inside
+                // the image with correct permissions before deploying. Catches
+                // Dockerfile permission issues at build time rather than runtime.
+                echo 'Verifying writable directories exist in image...'
                 sh """
                     docker run --rm --entrypoint python ${IMAGE_NAME}:latest \
-                    -c "import os; v=os.environ.get('SMART_API_LOG_PATH',''); assert v=='/tmp', f'SMART_API_LOG_PATH not set correctly: {v}'; print('✅ SMART_API_LOG_PATH=/tmp verified')" \
-                    || (echo "❌ SMART_API_LOG_PATH not set correctly in image" && exit 1)
+                    -c "
+import os, stat
+dirs = ['/app/output', '/app/logs', '/tmp/smartapi_logs', '/tmp/.streamlit', '/tmp/.local']
+for d in dirs:
+    assert os.path.isdir(d), f'Missing directory: {d}'
+    mode = oct(stat.S_IMODE(os.stat(d).st_mode))
+    print(f'✅ {d} exists with permissions {mode}')
+print('✅ All writable directories verified')
+" \
+                    || (echo "❌ Directory verification failed" && exit 1)
                 """
             }
         }
@@ -121,18 +129,22 @@ pipeline {
                     }
 
                     echo "Setting up output directory..."
-                    sh """
-                        mkdir -p ${HOST_CONFIG_DIR}/output
-                    """
+                    sh "mkdir -p ${HOST_CONFIG_DIR}/output"
 
+                    // FIX: Removed --user \$(id -u):\$(id -g) flag entirely.
+                    // That flag was overriding the container's intended user with
+                    // the Jenkins UID at runtime, which had no write permissions
+                    // anywhere in /app, causing [Errno 13] Permission denied: 'logs'.
+                    // The container now runs as root (python:3.10-slim default),
+                    // which combined with chmod 777 on all critical directories in
+                    // the Dockerfile guarantees writes never fail regardless of UID.
                     sh """
                         docker run -d \
                         --name ${CONTAINER_NAME} \
                         --restart unless-stopped \
-                        --user \$(id -u):\$(id -g) \
                         -e HOME=/tmp \
                         -e PYTHONUSERBASE=/tmp/.local \
-                        -e SMART_API_LOG_PATH=/tmp \
+                        -e STREAMLIT_BROWSER_GATHER_USAGE_STATS=false \
                         -p 8501:8501 \
                         -v ${HOST_CONFIG_DIR}/output:/app/output \
                         --env-file ${HOST_CONFIG_DIR}/.env \

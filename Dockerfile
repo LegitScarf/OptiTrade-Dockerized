@@ -3,15 +3,14 @@ FROM python:3.10-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    SMART_API_LOG_PATH=/tmp
+    STREAMLIT_BROWSER_GATHER_USAGE_STATS=false \
+    STREAMLIT_SERVER_HEADLESS=true
 
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
     git \
     && rm -rf /var/lib/apt/lists/*
-
-RUN useradd -m -u 1000 optiuser
 
 WORKDIR /app
 
@@ -26,9 +25,22 @@ RUN test -d /app/src || (echo "ERROR: src/ directory not found in image!" && exi
 RUN find /app -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 RUN find /app -type f -name "*.pyc" -delete 2>/dev/null || true
 
-RUN mkdir -p /app/output && chown -R optiuser:optiuser /app
+# FIX: Create ALL directories that SmartApi, Streamlit, and Python will ever
+# need to write to, then chmod 777 so ANY UID (including Jenkins override UID)
+# can write to them. This eliminates the UID mismatch between optiuser (1000)
+# and the Jenkins --user flag entirely.
+RUN mkdir -p /app/output \
+    /app/logs \
+    /tmp/smartapi_logs \
+    /tmp/.streamlit \
+    /tmp/.local && \
+    chmod -R 777 /app/output \
+    /app/logs \
+    /tmp/smartapi_logs \
+    /tmp/.streamlit \
+    /tmp/.local
 
-USER optiuser
+# Do NOT set USER — let the container run as whatever UID Docker/Jenkins assigns
 
 EXPOSE 8501
 
