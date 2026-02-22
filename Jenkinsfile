@@ -12,18 +12,16 @@ pipeline {
             steps {
                 echo 'Checking system resources...'
                 script {
-                    // FIX: Check available disk space before building to prevent
-                    // "No space left on device" errors mid-build. Fail fast if <3GB free.
                     try {
                         def diskCheck = sh(
                             script: "df -BG /var/lib/docker | awk 'NR==2 {print \$4}' | sed 's/G//'",
                             returnStdout: true
                         ).trim().toInteger()
-                        
+
                         if (diskCheck < 3) {
                             error("❌ Insufficient disk space: ${diskCheck}GB free. Need at least 3GB. Run: docker system prune -a --volumes -f")
                         }
-                        
+
                         echo "✅ Disk space OK: ${diskCheck}GB available"
                     } catch (Exception e) {
                         echo "⚠️  Could not check disk space, proceeding anyway: ${e.message}"
@@ -36,14 +34,11 @@ pipeline {
             steps {
                 echo 'Validating configuration files...'
                 script {
-                    // FIX: Verify .env exists on the host before deploying.
-                    // Without this, the container starts but crashes on first API call.
                     def envFile = "${HOST_CONFIG_DIR}/.env"
                     if (!fileExists(envFile)) {
                         error("❌ .env file missing at ${envFile} — cannot deploy without API credentials")
                     }
-                    
-                    // FIX: Verify required keys are present in .env
+
                     def required = ["ANGEL_API_KEY", "ANGEL_CLIENT_ID", "ANGEL_MPIN", "ANGEL_TOTP_SECRET"]
                     def content = readFile(envFile)
                     required.each { key ->
@@ -51,12 +46,11 @@ pipeline {
                             error("❌ Required key '${key}' missing from .env")
                         }
                     }
-                    
-                    // FIX: Verify src/ directory exists in the build context
+
                     if (!fileExists("src/tools.py")) {
                         error("❌ src/tools.py not found — check repository structure")
                     }
-                    
+
                     echo "✅ All validation checks passed"
                 }
             }
@@ -66,12 +60,6 @@ pipeline {
             steps {
                 echo 'Removing old Docker artifacts...'
                 script {
-                    // FIX: The original code failed because it tried to remove the image
-                    // while the container was still running. We now stop the container FIRST,
-                    // then force-remove the image, then prune dangling images.
-                    // This prevents disk space buildup over multiple deployments.
-                    
-                    // Step 1: Stop and remove the old container
                     try {
                         sh "docker stop ${CONTAINER_NAME} 2>/dev/null || true"
                         sh "docker rm ${CONTAINER_NAME} 2>/dev/null || true"
@@ -79,16 +67,14 @@ pipeline {
                     } catch (Exception e) {
                         echo "⚠️  No container to stop (first deployment?)"
                     }
-                    
-                    // Step 2: Force-remove the old image (now that container is gone)
+
                     try {
                         sh "docker rmi -f ${IMAGE_NAME}:latest 2>/dev/null || true"
                         echo "✅ Removed old image"
                     } catch (Exception e) {
                         echo "⚠️  No old image to remove"
                     }
-                    
-                    // Step 3: Prune dangling images to free disk space
+
                     try {
                         sh "docker image prune -f"
                         echo "✅ Pruned dangling images"
@@ -102,20 +88,23 @@ pipeline {
         stage('Build Image') {
             steps {
                 echo 'Building Docker Image from scratch...'
-                // FIX: Added --no-cache to force a clean build.
-                // This prevents Docker from reusing layers that contain old .pyc files
-                // or stale Python bytecode, which was causing the 'str' object bug to persist
-                // even after the source code was updated.
                 sh "docker build --no-cache -t ${IMAGE_NAME}:latest ."
-                
-                // FIX: Verify the patched code is actually in the image.
-                // This catches build issues early before we waste time deploying a broken image.
-                // Must override entrypoint because Dockerfile sets it to 'streamlit run'.
+
                 echo 'Verifying patched code is present in image...'
                 sh """
                     docker run --rm --entrypoint python ${IMAGE_NAME}:latest \
                     -c "from src.tools import _safe_parse_response; print('✅ Patched code verified in image')" \
                     || (echo "❌ Patched code not found in image" && exit 1)
+                """
+
+                // FIX: Verify SMART_API_LOG_PATH is correctly set in the image
+                // so permission errors on the logs directory are caught at build
+                // time rather than silently at runtime.
+                echo 'Verifying SMART_API_LOG_PATH is set in image...'
+                sh """
+                    docker run --rm --entrypoint python ${IMAGE_NAME}:latest \
+                    -c "import os; v=os.environ.get('SMART_API_LOG_PATH',''); assert v=='/tmp', f'SMART_API_LOG_PATH not set correctly: {v}'; print('✅ SMART_API_LOG_PATH=/tmp verified')" \
+                    || (echo "❌ SMART_API_LOG_PATH not set correctly in image" && exit 1)
                 """
             }
         }
@@ -124,8 +113,6 @@ pipeline {
             steps {
                 echo 'Deploying to Production...'
                 script {
-                    // The old container was already removed in Clean Old Artifacts stage,
-                    // but we double-check here just in case
                     try {
                         sh "docker stop ${CONTAINER_NAME} 2>/dev/null || true"
                         sh "docker rm ${CONTAINER_NAME} 2>/dev/null || true"
@@ -133,18 +120,11 @@ pipeline {
                         echo "⚠️  Container already removed"
                     }
 
-                    // FIX: Create output directory and run container with matching user ID.
-                    // Instead of using chown (which requires sudo), we create the directory
-                    // and let Docker's --user flag handle the permission mapping automatically.
                     echo "Setting up output directory..."
                     sh """
                         mkdir -p ${HOST_CONFIG_DIR}/output
                     """
 
-                    // Launch the new container with --user flag to match host directory ownership
-                    // This eliminates the need for chown/sudo by running the container as the
-                    // same UID that Jenkins uses, ensuring write permissions to mounted volumes.
-                    // We set HOME=/tmp so CrewAI and Python packages can create cache directories.
                     sh """
                         docker run -d \
                         --name ${CONTAINER_NAME} \
@@ -152,26 +132,25 @@ pipeline {
                         --user \$(id -u):\$(id -g) \
                         -e HOME=/tmp \
                         -e PYTHONUSERBASE=/tmp/.local \
+                        -e SMART_API_LOG_PATH=/tmp \
                         -p 8501:8501 \
                         -v ${HOST_CONFIG_DIR}/output:/app/output \
                         --env-file ${HOST_CONFIG_DIR}/.env \
                         ${IMAGE_NAME}:latest
                     """
-                    
-                    // FIX: Wait for container to start before proceeding
+
                     echo "Waiting for container to initialize..."
                     sleep 10
-                    
-                    // FIX: Verify container is actually running (not crashed)
+
                     def containerRunning = sh(
                         script: "docker ps --filter name=${CONTAINER_NAME} --filter status=running --quiet",
                         returnStdout: true
                     ).trim()
-                    
+
                     if (!containerRunning) {
                         error("❌ Container failed to start. Check logs: docker logs ${CONTAINER_NAME}")
                     }
-                    
+
                     echo "✅ Container deployed and running"
                 }
             }
@@ -181,12 +160,9 @@ pipeline {
             steps {
                 echo 'Verifying application health...'
                 script {
-                    // FIX: Poll the Streamlit healthcheck endpoint to confirm the app is responding.
-                    // The original code had no health verification, so broken deployments would
-                    // silently "succeed" and leave users with a non-functional app.
-                    def maxRetries = 12  // 60 seconds total (5s * 12)
+                    def maxRetries = 12
                     def healthy = false
-                    
+
                     for (int i = 0; i < maxRetries; i++) {
                         try {
                             sh "curl --fail --silent http://localhost:8501/_stcore/health"
@@ -200,9 +176,8 @@ pipeline {
                             }
                         }
                     }
-                    
+
                     if (!healthy) {
-                        // Dump container logs for debugging
                         echo "Container logs:"
                         sh "docker logs --tail 50 ${CONTAINER_NAME}"
                         error("❌ Application failed to become healthy after ${maxRetries * 5} seconds")
@@ -214,12 +189,11 @@ pipeline {
         stage('Cleanup') {
             steps {
                 echo 'Final cleanup: removing dangling images...'
-                // Remove any leftover images from the build process
                 sh "docker image prune -f"
             }
         }
     }
-    
+
     post {
         success {
             echo '✅✅✅ Deployment completed successfully ✅✅✅'
@@ -232,7 +206,6 @@ pipeline {
             echo "Manual cleanup: docker system prune -a --volumes -f"
         }
         always {
-            // Show current disk usage after every build
             echo 'Current disk usage:'
             sh 'df -h /var/lib/docker'
         }
