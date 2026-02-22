@@ -880,35 +880,6 @@ else:
         ("07", "Risk"),        ("08", "Decision"),   ("09", "Report"),
     ]
 
-    # Build the entire pipeline strip as one Python string
-    pipeline_strip_html = ""
-    for i, (num, name) in enumerate(preview_steps):
-        connector = (
-            ""
-            if i == len(preview_steps) - 1
-            else '<div style="width:20px;height:1px;background:#E8E8EF;flex-shrink:0;"></div>'
-        )
-        pipeline_strip_html += f"""
-        <div style="display:inline-flex;align-items:center;gap:0;">
-            <div style="display:flex;flex-direction:column;align-items:center;gap:5px;
-                        background:white;border:1px solid #E8E8EF;border-radius:6px;
-                        padding:10px 12px;min-width:64px;
-                        box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;
-                             font-weight:600;color:#1400FF;">{num}</span>
-                <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;
-                             font-weight:500;color:#6B6B78;text-align:center;
-                             white-space:nowrap;">{name}</span>
-            </div>
-            {connector}
-        </div>"""
-
-    preview_steps = [
-        ("01", "Market Data"), ("02", "Technicals"), ("03", "Sentiment"),
-        ("04", "Greeks"),      ("05", "Backtest"),   ("06", "Synthesis"),
-        ("07", "Risk"),        ("08", "Decision"),   ("09", "Report"),
-    ]
-
     pipeline_strip_html = ""
     for i, (num, name) in enumerate(preview_steps):
         connector = (
