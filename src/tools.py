@@ -428,6 +428,7 @@ def _generate_simulated_option_chain(spot_price: float, atm_strike: int, expiry_
 
 @tool("Calculate Technical Indicators")
 def calculate_technical_indicators(historical_data: str) -> Dict[str, Any]:
+    """Calculate EMA, RSI, MACD, Bollinger Bands, ATR and trend signals from historical OHLC data."""
     try:
         # Parse the JSON string input - handles both string and list inputs
         import json
