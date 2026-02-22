@@ -4,6 +4,7 @@ import time
 import threading
 from datetime import datetime, timedelta
 import streamlit as st
+import streamlit.components.v1 as components
 from src.crew import OptiTradeCrew
 from src.tools import authenticate_angel, find_nifty_expiry_dates
 
@@ -866,14 +867,26 @@ if run_analysis:
 else:
     # ─────────────────────────────────────────
     #  EMPTY STATE
-    #  FIX: entire block is ONE st.markdown() call.
-    #  Pipeline strip is built as a Python string first, then interpolated.
-    #  Never split a single HTML structure across multiple st.markdown() calls —
-    #  Streamlit renders each call as an isolated HTML island, so unclosed tags
-    #  from one call are never closed by a subsequent call, causing the browser
-    #  to reject the structure and spill raw HTML as visible text.
+    #
+    #  PERMANENT FIX: use st.components.v1.html() instead of st.markdown().
+    #
+    #  Root cause of all previous failures:
+    #    - st.markdown() runs content through Streamlit's markdown/sanitizer
+    #      pipeline which can silently drop or escape HTML it doesn't like,
+    #      especially large blocks or content containing certain character
+    #      sequences (curly braces in CSS values, HTML entities, etc.)
+    #    - f-strings over large HTML templates fail when CSS values like
+    #      rgba(0,0,0,0.04) are misread as incomplete format expressions.
+    #    - Splitting HTML across multiple st.markdown() calls creates isolated
+    #      rendering islands with no shared DOM, so unclosed tags never close.
+    #
+    #  st.components.v1.html() renders into a true sandboxed iframe.
+    #  It receives a raw string — no sanitizer, no markdown parser, no
+    #  f-string interpolation on the final payload. It cannot leak as text.
+    #  The font @import and all styles are self-contained inside the iframe.
     # ─────────────────────────────────────────
 
+    # Build pipeline strip in Python — safe f-string over small variables only
     preview_steps = [
         ("01", "Market Data"), ("02", "Technicals"), ("03", "Sentiment"),
         ("04", "Greeks"),      ("05", "Backtest"),   ("06", "Synthesis"),
@@ -885,88 +898,99 @@ else:
         connector = (
             ""
             if i == len(preview_steps) - 1
-            else '<div style="width:20px;height:1px;background:#E8E8EF;flex-shrink:0;"></div>'
+            else "<div style='width:20px;height:1px;background:#E8E8EF;flex-shrink:0;'></div>"
         )
-        pipeline_strip_html += f"""
-        <div style="display:inline-flex;align-items:center;gap:0;">
-            <div style="display:flex;flex-direction:column;align-items:center;gap:5px;
-                        background:white;border:1px solid #E8E8EF;border-radius:6px;
-                        padding:10px 12px;min-width:64px;
-                        box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;
-                             font-weight:600;color:#1400FF;">{num}</span>
-                <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;
-                             font-weight:500;color:#6B6B78;text-align:center;
-                             white-space:nowrap;">{name}</span>
-            </div>
-            {connector}
-        </div>"""
+        pipeline_strip_html += (
+            "<div style='display:inline-flex;align-items:center;gap:0;'>"
+            "<div style='display:flex;flex-direction:column;align-items:center;gap:5px;"
+            "background:white;border:1px solid #E8E8EF;border-radius:6px;"
+            "padding:10px 12px;min-width:64px;box-shadow:0 1px 3px rgba(0,0,0,0.04);'>"
+            "<span style='font-family:IBM Plex Mono,monospace;font-size:9px;"
+            "font-weight:600;color:#1400FF;'>" + num + "</span>"
+            "<span style='font-family:Plus Jakarta Sans,sans-serif;font-size:10px;"
+            "font-weight:500;color:#6B6B78;text-align:center;white-space:nowrap;'>" + name + "</span>"
+            "</div>"
+            + connector +
+            "</div>"
+        )
 
-    empty_state_html = """
-    <div class="anim-in" style="padding:52px 0 32px;">
+    # Assemble the full HTML document — plain string concatenation, zero f-string risk
+    empty_state_html = (
+        "<!DOCTYPE html><html><head>"
+        "<link rel='preconnect' href='https://fonts.googleapis.com'>"
+        "<link href='https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600"
+        "&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Plus+Jakarta+Sans:"
+        "wght@400;500;600;700&display=swap' rel='stylesheet'>"
+        "<style>"
+        "* { box-sizing:border-box; margin:0; padding:0; }"
+        "body { background:white; font-family:'Plus Jakarta Sans',sans-serif; "
+        "       -webkit-font-smoothing:antialiased; padding:52px 24px 32px; }"
+        "@keyframes fadeIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }"
+        ".wrap { animation:fadeIn 0.5s cubic-bezier(0.22,1,0.36,1) both; }"
+        "</style></head><body><div class='wrap'>"
 
-        <div style="max-width:740px;margin:0 auto 52px;text-align:center;">
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:3.5px;
-                        text-transform:uppercase;color:#AEAEBA;margin-bottom:22px;">
-                AI-Powered &middot; 9 Agents &middot; Live NSE Data
-            </div>
-            <div style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;
-                        font-size:58px;color:#0C0C0E;line-height:1.0;
-                        letter-spacing:-2.5px;margin-bottom:18px;">
-                Institutional options<br>
-                <span style="color:#1400FF;">intelligence</span>,<br>
-                <span style="font-style:italic;font-weight:400;color:#6B6B78;font-size:50px;">
-                    automated.
-                </span>
-            </div>
-            <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;
-                        color:#6B6B78;line-height:1.85;max-width:480px;margin:0 auto;">
-                Configure your parameters in the sidebar and run the full
-                multi-agent pipeline across live Nifty 50 market data.
-            </div>
-        </div>
+        # ── Hero ──
+        "<div style='max-width:740px;margin:0 auto 52px;text-align:center;'>"
+        "<div style='font-family:IBM Plex Mono,monospace;font-size:9px;letter-spacing:3.5px;"
+        "text-transform:uppercase;color:#AEAEBA;margin-bottom:22px;'>"
+        "AI-Powered &middot; 9 Agents &middot; Live NSE Data</div>"
+        "<div style='font-family:Cormorant Garamond,Georgia,serif;font-weight:600;"
+        "font-size:58px;color:#0C0C0E;line-height:1.0;letter-spacing:-2.5px;margin-bottom:18px;'>"
+        "Institutional options<br>"
+        "<span style='color:#1400FF;'>intelligence</span>,<br>"
+        "<span style='font-style:italic;font-weight:400;color:#6B6B78;font-size:50px;'>automated.</span>"
+        "</div>"
+        "<div style='font-family:Plus Jakarta Sans,sans-serif;font-size:15px;"
+        "color:#6B6B78;line-height:1.85;max-width:480px;margin:0 auto;'>"
+        "Configure your parameters in the sidebar and run the full "
+        "multi-agent pipeline across live Nifty 50 market data."
+        "</div></div>"
 
-        <div style="display:flex;gap:0;border:1px solid #E8E8EF;border-radius:10px;
-                    overflow:hidden;max-width:680px;margin:0 auto 52px;
-                    box-shadow:0 2px 8px rgba(0,0,0,0.04);">
-            <div style="flex:1;padding:22px 24px;border-right:1px solid #E8E8EF;text-align:center;">
-                <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;
-                            text-transform:uppercase;color:#AEAEBA;margin-bottom:8px;">Agents</div>
-                <div style="font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:600;
-                            color:#1400FF;letter-spacing:-1.5px;line-height:1;">9</div>
-            </div>
-            <div style="flex:1;padding:22px 24px;border-right:1px solid #E8E8EF;text-align:center;">
-                <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;
-                            text-transform:uppercase;color:#AEAEBA;margin-bottom:8px;">Data Source</div>
-                <div style="font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:600;
-                            color:#0C0C0E;letter-spacing:-1.5px;line-height:1;">Live</div>
-            </div>
-            <div style="flex:1;padding:22px 24px;border-right:1px solid #E8E8EF;text-align:center;">
-                <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;
-                            text-transform:uppercase;color:#AEAEBA;margin-bottom:8px;">Exchange</div>
-                <div style="font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:600;
-                            color:#0C0C0E;letter-spacing:-1.5px;line-height:1;">NSE</div>
-            </div>
-            <div style="flex:1;padding:22px 24px;text-align:center;">
-                <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;
-                            text-transform:uppercase;color:#AEAEBA;margin-bottom:8px;">Model</div>
-                <div style="font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:600;
-                            color:#0C0C0E;letter-spacing:-1.5px;line-height:1;">GPT&#8209;4o</div>
-            </div>
-        </div>
+        # ── Stat strip ──
+        "<div style='display:flex;gap:0;border:1px solid #E8E8EF;border-radius:10px;"
+        "overflow:hidden;max-width:680px;margin:0 auto 52px;"
+        "box-shadow:0 2px 8px rgba(0,0,0,0.04);'>"
 
-        <div style="max-width:900px;margin:0 auto;">
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2.5px;
-                        text-transform:uppercase;color:#AEAEBA;margin-bottom:14px;text-align:center;">
-                Sequential Agent Pipeline
-            </div>
-            <div style="display:flex;align-items:center;justify-content:center;
-                        flex-wrap:wrap;gap:0;row-gap:8px;">
-                PIPELINE_STRIP_PLACEHOLDER
-            </div>
-        </div>
+        "<div style='flex:1;padding:22px 24px;border-right:1px solid #E8E8EF;text-align:center;'>"
+        "<div style='font-family:IBM Plex Mono,monospace;font-size:9px;letter-spacing:2px;"
+        "text-transform:uppercase;color:#AEAEBA;margin-bottom:8px;'>Agents</div>"
+        "<div style='font-family:Cormorant Garamond,serif;font-size:40px;font-weight:600;"
+        "color:#1400FF;letter-spacing:-1.5px;line-height:1;'>9</div></div>"
 
-    </div>
-    """.replace("PIPELINE_STRIP_PLACEHOLDER", pipeline_strip_html)
+        "<div style='flex:1;padding:22px 24px;border-right:1px solid #E8E8EF;text-align:center;'>"
+        "<div style='font-family:IBM Plex Mono,monospace;font-size:9px;letter-spacing:2px;"
+        "text-transform:uppercase;color:#AEAEBA;margin-bottom:8px;'>Data Source</div>"
+        "<div style='font-family:Cormorant Garamond,serif;font-size:40px;font-weight:600;"
+        "color:#0C0C0E;letter-spacing:-1.5px;line-height:1;'>Live</div></div>"
 
-    st.markdown(empty_state_html, unsafe_allow_html=True)
+        "<div style='flex:1;padding:22px 24px;border-right:1px solid #E8E8EF;text-align:center;'>"
+        "<div style='font-family:IBM Plex Mono,monospace;font-size:9px;letter-spacing:2px;"
+        "text-transform:uppercase;color:#AEAEBA;margin-bottom:8px;'>Exchange</div>"
+        "<div style='font-family:Cormorant Garamond,serif;font-size:40px;font-weight:600;"
+        "color:#0C0C0E;letter-spacing:-1.5px;line-height:1;'>NSE</div></div>"
+
+        "<div style='flex:1;padding:22px 24px;text-align:center;'>"
+        "<div style='font-family:IBM Plex Mono,monospace;font-size:9px;letter-spacing:2px;"
+        "text-transform:uppercase;color:#AEAEBA;margin-bottom:8px;'>Model</div>"
+        "<div style='font-family:Cormorant Garamond,serif;font-size:40px;font-weight:600;"
+        "color:#0C0C0E;letter-spacing:-1.5px;line-height:1;'>GPT&#8209;4o</div></div>"
+
+        "</div>"
+
+        # ── Pipeline preview ──
+        "<div style='max-width:900px;margin:0 auto;'>"
+        "<div style='font-family:IBM Plex Mono,monospace;font-size:9px;letter-spacing:2.5px;"
+        "text-transform:uppercase;color:#AEAEBA;margin-bottom:14px;text-align:center;'>"
+        "Sequential Agent Pipeline</div>"
+        "<div style='display:flex;align-items:center;justify-content:center;"
+        "flex-wrap:wrap;gap:0;row-gap:8px;'>"
+        + pipeline_strip_html +
+        "</div></div>"
+
+        "</div></body></html>"
+    )
+
+    # components.html renders into a true sandboxed iframe —
+    # no markdown parser, no sanitizer, no f-string expansion on the payload.
+    # height is set generously; scrolling=False keeps it flush with the page.
+    components.html(empty_state_html, height=680, scrolling=False)
