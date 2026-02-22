@@ -1,4 +1,29 @@
-import os
+import os as _os
+import builtins as _builtins
+
+# FIX: SmartConnect.__init__ executes:
+#   log_folder_path = os.path.join("logs", time.strftime("%Y-%m-%d"))  e.g. "logs/2026-02-22"
+#   os.makedirs(log_folder_path, exist_ok=True)
+#   logzero.logfile(os.path.join(log_folder_path, "app.log"))
+# Under a non-owner container UID the relative "logs/" path is not writable,
+# causing [Errno 13] Permission denied: 'logs'. We patch os.makedirs AND
+# logzero.logfile BEFORE SmartApi is imported to redirect all writes to /tmp.
+_original_makedirs = _os.makedirs
+
+def _patched_makedirs(name, mode=0o777, exist_ok=False):
+    name_str = str(name)
+    if name_str == 'logs' or name_str.startswith('logs' + _os.sep) or name_str.startswith('logs/'):
+        name = _os.path.join('/tmp', 'smartapi_logs', name_str.split('logs' + _os.sep, 1)[-1].split('logs/', 1)[-1])
+        exist_ok = True
+    return _original_makedirs(name, mode=mode, exist_ok=exist_ok)
+
+_os.makedirs = _patched_makedirs
+
+# Also patch logzero.logfile before SmartApi import since __init__ calls it too
+import logzero as _logzero
+_logzero.logfile = lambda *args, **kwargs: None
+
+from SmartApi import SmartConnect  # SmartConnect.__init__ now writes safely to /tmp
 import json
 import logging
 import threading
@@ -8,17 +33,6 @@ import numpy as np
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 from crewai.tools import tool
-import requests
-
-# FIX: SmartApi-python unconditionally calls logzero.logfile('logs/smartapi.log')
-# at SmartConnect instantiation time, hardcoded as a relative path. When the
-# container runs with a non-owner UID (Jenkins --user flag), it cannot create
-# the 'logs/' directory under /app, causing [Errno 13] Permission denied: 'logs'.
-# Patching logzero.logfile to a no-op BEFORE SmartConnect is imported prevents
-# the library from ever attempting to create the directory.
-import logzero as _logzero
-_logzero.logfile = lambda *args, **kwargs: None
-from SmartApi import SmartConnect
 import requests
 
 logger = logging.getLogger("OptiTrade.Tools")
