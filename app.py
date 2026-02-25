@@ -575,6 +575,9 @@ if run_analysis:
             result_container["error"]  = str(e)
 
     # ── Pipeline tracker ─────────────────────────────────────────────
+    # Uses components.html() — immune to st.markdown() sanitizer leaking raw HTML.
+    # All HTML is assembled via plain string concatenation; no f-strings on the
+    # outer wrapper so CSS values like rgba() never collide with format braces.
     pipeline_slot = st.empty()
 
     def _render_pipeline(done: list, active_tool: str = ""):
@@ -587,64 +590,81 @@ if run_analysis:
             is_current = (i == next_idx)
 
             if is_done:
-                row_bg = "#F0FBF5"; row_bd = "rgba(18,160,92,0.15)"
-                nb = "#12A05C"; nc = "white"; namec = "#0A6640"; descc = "rgba(10,102,64,0.50)"
-                badge = "&#10003;"; extra = ""
+                row_bg = "#F0FBF5";    row_bd = "rgba(18,160,92,0.15)"
+                nb = "#12A05C";        nc = "white"
+                namec = "#0A6640";     descc = "rgba(10,102,64,0.50)"
+                badge = "&#10003;";    extra = ""
             elif is_current:
-                row_bg = "#F6F7FF"; row_bd = "rgba(20,0,255,0.15)"
-                nb = "#1400FF"; nc = "white"; namec = "#1400FF"; descc = "rgba(20,0,255,0.45)"
+                row_bg = "#F6F7FF";    row_bd = "rgba(20,0,255,0.15)"
+                nb = "#1400FF";        nc = "white"
+                namec = "#1400FF";     descc = "rgba(20,0,255,0.45)"
                 badge = num
-                tool_pill = (
-                    f' <span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;'
-                    f'color:rgba(20,0,255,0.55);background:rgba(20,0,255,0.06);'
-                    f'padding:2px 7px;border-radius:3px;border:1px solid rgba(20,0,255,0.12);'
-                    f'margin-left:8px;">{active_tool[:30]}</span>'
+                extra = (
+                    "<span style='font-family:IBM Plex Mono,monospace;font-size:9px;"
+                    "color:rgba(20,0,255,0.55);background:rgba(20,0,255,0.06);"
+                    "padding:2px 7px;border-radius:3px;border:1px solid rgba(20,0,255,0.12);"
+                    "margin-left:8px;'>" + active_tool[:30] + "</span>"
                 ) if active_tool else ""
-                extra = tool_pill
             else:
                 row_bg = "transparent"; row_bd = "rgba(12,12,14,0.07)"
-                nb = "#F4F4F8"; nc = "#AEAEBA"; namec = "#AEAEBA"; descc = "rgba(12,12,14,0.20)"
-                badge = num; extra = ""
+                nb = "#F4F4F8";         nc = "#AEAEBA"
+                namec = "#AEAEBA";      descc = "rgba(12,12,14,0.20)"
+                badge = num;            extra = ""
 
-            rows_html += f"""
-            <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;
-                        background:{row_bg};border:1px solid {row_bd};
-                        border-radius:6px;margin-bottom:5px;">
-                <div style="width:26px;height:26px;border-radius:5px;background:{nb};flex-shrink:0;
-                            display:flex;align-items:center;justify-content:center;
-                            font-family:'IBM Plex Mono',monospace;font-size:10px;
-                            font-weight:600;color:{nc};">{badge}</div>
-                <div style="flex:1;min-width:0;">
-                    <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;
-                                font-weight:500;color:{namec};">{name}{extra}</div>
-                    <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;
-                                color:{descc};margin-top:1px;letter-spacing:0.3px;">{desc}</div>
-                </div>
-            </div>"""
+            # Each row built with plain concatenation — no f-string, no brace risk
+            rows_html += (
+                "<div style='display:flex;align-items:center;gap:12px;padding:10px 14px;"
+                "background:" + row_bg + ";border:1px solid " + row_bd + ";"
+                "border-radius:6px;margin-bottom:5px;'>"
+                "<div style='width:26px;height:26px;border-radius:5px;background:" + nb + ";flex-shrink:0;"
+                "display:flex;align-items:center;justify-content:center;"
+                "font-family:IBM Plex Mono,monospace;font-size:10px;"
+                "font-weight:600;color:" + nc + ";'>" + badge + "</div>"
+                "<div style='flex:1;min-width:0;'>"
+                "<div style='font-family:Plus Jakarta Sans,sans-serif;font-size:13px;"
+                "font-weight:500;color:" + namec + ";'>" + name + extra + "</div>"
+                "<div style='font-family:IBM Plex Mono,monospace;font-size:9.5px;"
+                "color:" + descc + ";margin-top:1px;letter-spacing:0.3px;'>" + desc + "</div>"
+                "</div></div>"
+            )
 
-        pct = int(len(done) / total * 100)
-        pipeline_slot.markdown(f"""
-        <div style="background:white;border:1px solid #E8E8EF;border-radius:14px;
-                    padding:18px;box-shadow:0 2px 8px rgba(0,0,0,0.04);margin:8px 0 16px;">
-            <div style="margin-bottom:14px;">
-                <div style="display:flex;justify-content:space-between;margin-bottom:7px;">
-                    <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;
-                                 letter-spacing:2px;text-transform:uppercase;color:#AEAEBA;">
-                        Pipeline Progress
-                    </span>
-                    <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6B6B78;">
-                        {len(done)}/{total} &middot; {pct}%
-                    </span>
-                </div>
-                <div style="height:3px;background:#E8E8EF;border-radius:2px;overflow:hidden;">
-                    <div style="height:100%;width:{pct}%;
-                                background:linear-gradient(90deg,#1400FF,#6B00FF);
-                                border-radius:2px;transition:width 0.4s ease;"></div>
-                </div>
-            </div>
-            {rows_html}
-        </div>
-        """, unsafe_allow_html=True)
+        pct       = int(len(done) / total * 100)
+        done_str  = str(len(done))
+        total_str = str(total)
+        pct_str   = str(pct)
+
+        pipeline_html = (
+            "<!DOCTYPE html><html><head>"
+            "<link rel='preconnect' href='https://fonts.googleapis.com'>"
+            "<link href='https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600"
+            "&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap' rel='stylesheet'>"
+            "<style>"
+            "* { box-sizing:border-box; margin:0; padding:0; }"
+            "body { background:transparent; margin:0; padding:0; }"
+            "</style></head><body>"
+            "<div style='background:white;border:1px solid #E8E8EF;border-radius:14px;"
+            "padding:18px;box-shadow:0 2px 8px rgba(0,0,0,0.04);margin:8px 0 16px;'>"
+            # Progress header
+            "<div style='margin-bottom:14px;'>"
+            "<div style='display:flex;justify-content:space-between;margin-bottom:7px;'>"
+            "<span style='font-family:IBM Plex Mono,monospace;font-size:9px;"
+            "letter-spacing:2px;text-transform:uppercase;color:#AEAEBA;'>Pipeline Progress</span>"
+            "<span style='font-family:IBM Plex Mono,monospace;font-size:9px;color:#6B6B78;'>"
+            + done_str + "/" + total_str + " &middot; " + pct_str + "%</span>"
+            "</div>"
+            # Progress bar
+            "<div style='height:3px;background:#E8E8EF;border-radius:2px;overflow:hidden;'>"
+            "<div style='height:100%;width:" + pct_str + "%;background:linear-gradient(90deg,#1400FF,#6B00FF);"
+            "border-radius:2px;'></div>"
+            "</div></div>"
+            # Task rows
+            + rows_html +
+            "</div>"
+            "</body></html>"
+        )
+
+        with pipeline_slot:
+            components.html(pipeline_html, height=530, scrolling=False)
 
     _render_pipeline([])
 
